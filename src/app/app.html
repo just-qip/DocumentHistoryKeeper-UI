@@ -29,6 +29,10 @@
         <div class="account-info">
           <div class="account-name">{{ a.displayName }}</div>
           <div class="account-email">{{ a.email }}</div>
+          <div class="account-tenant">
+            <span class="tenant-label">tenant</span>
+            <code>{{ a.tenantId }}</code>
+          </div>
         </div>
       </div>
       <button class="link" (click)="logout()">Сменить аккаунт</button>

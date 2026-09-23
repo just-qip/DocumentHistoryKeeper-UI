@@ -1,359 +1,38 @@
-import { Component, ElementRef, inject, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  HostListener,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { DatePipe, JsonPipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { DocumentApiService } from '../../core/api/document-api.service';
+import { AccountDirectoryService } from '../../core/account-directory.service';
 import { Document, TimelineEvent, VersionMeta } from '../../core/models';
+
+/** Режим отображения предпросмотра, вычисляется по MIME. */
+type PreviewMode = 'text' | 'image' | 'pdf' | 'video' | 'audio' | 'unknown';
 
 @Component({
   selector: 'app-document-detail',
   standalone: true,
   imports: [RouterLink, DatePipe, JsonPipe, FormsModule],
-  template: `
-    @if (document(); as d) {
-      <nav class="crumbs">
-        <a routerLink="/projects">Проекты</a> /
-        <a [routerLink]="['/projects', d.projectId]">проект</a> /
-        <span>{{ d.title }}</span>
-      </nav>
-      <header class="page-head">
-        <h1>{{ d.title }}</h1>
-        <span class="kind">{{ d.docKind }}</span>
-      </header>
-    }
-
-    @if (error()) {
-      <div class="error">{{ error() }}</div>
-    }
-
-    <div class="tabs">
-      <button [class.active]="tab() === 'versions'" (click)="tab.set('versions')">
-        Версии ({{ versions().length }})
-      </button>
-      <button [class.active]="tab() === 'timeline'" (click)="tab.set('timeline')">
-        Хронология
-      </button>
-    </div>
-
-    @if (tab() === 'versions') {
-      <div class="card">
-        <form class="upload-form" (ngSubmit)="upload()">
-          <div class="field">
-            <label for="fileInput">Файл</label>
-            <input #fileInput id="fileInput" type="file" (change)="onFile($event)" />
-          </div>
-
-          <div class="field">
-            <label for="commentInput">Комментарий</label>
-            <input
-              id="commentInput"
-              name="comment"
-              [(ngModel)]="comment"
-              placeholder="Правки юриста, исправление опечатки…"
-            />
-          </div>
-
-          <button type="submit" [disabled]="!file">Загрузить версию</button>
-        </form>
-
-        <table class="table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Файл</th>
-              <th>Размер</th>
-              <th>Автор</th>
-              <th>Дата</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (v of versions(); track v.id) {
-              <tr>
-                <td>
-                  <strong>v{{ v.versionNumber }}</strong>
-                </td>
-                <td>
-                  {{ v.originalName }}
-                  <div class="mime">{{ v.mimeType }}</div>
-                </td>
-                <td>{{ humanSize(v.sizeBytes) }}</td>
-                <td>
-                  <code>{{ short(v.authorId) }}</code>
-                </td>
-                <td>{{ v.createdAt | date: 'short' }}</td>
-                <td><button class="ghost" (click)="download(v)">Скачать</button></td>
-              </tr>
-              @if (v.comment) {
-                <tr class="comment-row">
-                  <td></td>
-                  <td colspan="5">💬 {{ v.comment }}</td>
-                </tr>
-              }
-            }
-          </tbody>
-        </table>
-      </div>
-    }
-
-    @if (tab() === 'timeline') {
-      <div class="card timeline">
-        @if (timeline().length === 0) {
-          <div class="muted">Событий нет.</div>
-        } @else {
-          <ol>
-            @for (e of timeline(); track e.id) {
-              <li>
-                <div class="event-head">
-                  <span class="badge" [attr.data-type]="e.type">{{ e.type }}</span>
-                  <span class="time">{{ e.at | date: 'medium' }}</span>
-                </div>
-                <div class="actor">
-                  актор <code>{{ short(e.actorId) }}</code>
-                </div>
-
-                @if (eventComment(e); as comment) {
-                  <div class="event-comment">💬 {{ comment }}</div>
-                }
-
-                @if (payloadWithoutComment(e); as rest) {
-                  <pre>{{ rest | json }}</pre>
-                }
-
-                <div class="hash">
-                  hash: <code>{{ e.eventHash }}</code>
-                </div>
-              </li>
-            }
-          </ol>
-          @if (nextCursor()) {
-            <button class="ghost" (click)="loadMore()">Загрузить ещё</button>
-          }
-        }
-      </div>
-    }
-  `,
-  styles: [
-    `
-      .crumbs {
-        font-size: 13px;
-        color: #64748b;
-        margin-bottom: 8px;
-      }
-      .crumbs a {
-        color: #1d4ed8;
-        text-decoration: none;
-      }
-      .page-head {
-        display: flex;
-        align-items: baseline;
-        gap: 12px;
-        margin-bottom: 24px;
-      }
-      h1 {
-        margin: 0;
-      }
-      .kind {
-        padding: 2px 8px;
-        background: #e0e7ff;
-        color: #3730a3;
-        border-radius: 4px;
-        font-size: 12px;
-      }
-      .tabs {
-        display: flex;
-        gap: 4px;
-        margin-bottom: 16px;
-      }
-      .tabs button {
-        padding: 8px 16px;
-        border: 1px solid #e2e8f0;
-        background: #fff;
-        border-radius: 6px;
-        cursor: pointer;
-        font: inherit;
-      }
-      .tabs button.active {
-        background: #1d4ed8;
-        color: #fff;
-        border-color: #1d4ed8;
-      }
-      .card {
-        background: #fff;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-      }
-
-      .upload-form {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        padding: 16px;
-        background: #f8fafc;
-        border-radius: 8px;
-        margin-bottom: 16px;
-      }
-      .field {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-      .field label {
-        font-size: 12px;
-        font-weight: 600;
-        color: #475569;
-      }
-      .field input {
-        padding: 8px 10px;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-        font: inherit;
-        background: #fff;
-      }
-      .upload-form button {
-        align-self: flex-start;
-        padding: 8px 16px;
-        border: 0;
-        border-radius: 6px;
-        background: #1d4ed8;
-        color: #fff;
-        cursor: pointer;
-        font: inherit;
-      }
-      .upload-form button:disabled {
-        opacity: 0.5;
-        cursor: default;
-      }
-
-      .table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      .table th,
-      .table td {
-        text-align: left;
-        padding: 12px 8px;
-        border-bottom: 1px solid #f1f5f9;
-      }
-      .table th {
-        font-size: 12px;
-        color: #475569;
-      }
-      .mime {
-        font-size: 11px;
-        color: #94a3b8;
-      }
-      .comment-row td {
-        background: #f8fafc;
-        font-size: 13px;
-        color: #475569;
-      }
-      .ghost {
-        padding: 6px 12px;
-        background: #f1f5f9;
-        color: #1d4ed8;
-        border: 0;
-        border-radius: 6px;
-        cursor: pointer;
-        font: inherit;
-        font-size: 13px;
-      }
-      .ghost:hover {
-        background: #e2e8f0;
-      }
-      code {
-        font-size: 11px;
-        color: #475569;
-      }
-
-      .timeline ol {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      }
-      .timeline li {
-        padding: 16px 0;
-        border-bottom: 1px solid #f1f5f9;
-      }
-      .event-head {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .badge {
-        padding: 3px 10px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        background: #e0e7ff;
-        color: #3730a3;
-      }
-      .badge[data-type='DELETED'] {
-        background: #fee2e2;
-        color: #991b1b;
-      }
-      .badge[data-type='UPLOADED'] {
-        background: #dbeafe;
-        color: #1e40af;
-      }
-      .badge[data-type='CREATED'] {
-        background: #dcfce7;
-        color: #166534;
-      }
-      .time {
-        color: #94a3b8;
-        font-size: 12px;
-      }
-      .actor {
-        font-size: 12px;
-        color: #64748b;
-        margin-top: 6px;
-      }
-
-      .event-comment {
-        margin-top: 8px;
-        padding: 8px 12px;
-        background: #fef9c3;
-        border-left: 3px solid #eab308;
-        border-radius: 4px;
-        font-size: 13px;
-        color: #713f12;
-      }
-
-      .timeline pre {
-        background: #f8fafc;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        margin: 8px 0 0;
-        overflow-x: auto;
-      }
-      .hash {
-        font-size: 11px;
-        color: #94a3b8;
-        margin-top: 6px;
-      }
-
-      .muted {
-        color: #64748b;
-      }
-      .error {
-        padding: 10px 12px;
-        border-radius: 6px;
-        background: #fee2e2;
-        color: #991b1b;
-        margin-bottom: 16px;
-      }
-    `,
-  ],
+  templateUrl: './document-detail.component.html',
+  styleUrl: './document-detail.component.css',
 })
 export class DocumentDetailComponent {
-  /** Ссылка на <input type="file">, чтобы сбрасывать значение после успешной загрузки. */
   readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
 
   private readonly api = inject(DocumentApiService);
+  private readonly directory = inject(AccountDirectoryService);
   private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly documentId = this.route.snapshot.paramMap.get('documentId')!;
   readonly document = signal<Document | null>(null);
@@ -363,16 +42,52 @@ export class DocumentDetailComponent {
   readonly tab = signal<'versions' | 'timeline'>('versions');
   readonly error = signal<string | null>(null);
 
+  /* ---------- Модальное окно предпросмотра ---------- */
+
+  readonly previewOpen = signal(false);
+  readonly previewVersion = signal<VersionMeta | null>(null);
+  readonly previewMode = signal<PreviewMode>('unknown');
+  readonly previewBlobUrl = signal<string | null>(null);
+  readonly previewText = signal<string | null>(null);
+  readonly previewLoading = signal(false);
+  readonly previewError = signal<string | null>(null);
+
   comment = '';
   file: File | null = null;
 
   constructor() {
+    // Блокируем скролл body, пока модалка открыта.
+    effect((onCleanup) => {
+      if (this.previewOpen()) {
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        onCleanup(() => {
+          document.body.style.overflow = prev;
+        });
+      }
+    });
+
+    // Отзываем blob-URL при разрушении компонента, чтобы не текла память.
+    this.destroyRef.onDestroy(() => this.revokePreviewUrl());
+
     this.api.get(this.documentId).subscribe({
       next: (d) => this.document.set(d),
       error: (err) => this.error.set(err?.error?.message ?? 'Документ не найден'),
     });
     this.reloadVersions();
     this.reloadTimeline();
+    void this.directory.ensureLoaded();
+  }
+
+  /** Escape закрывает модалку. */
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.previewOpen()) this.closePreview();
+  }
+
+  /** Останавливает всплытие клика, чтобы клик по карточке модалки не закрывал её. */
+  stopPropagation(e: Event): void {
+    e.stopPropagation();
   }
 
   reloadVersions(): void {
@@ -406,6 +121,16 @@ export class DocumentDetailComponent {
     this.file = input.files?.[0] ?? null;
   }
 
+  /**
+   * Очищает выбранный файл и сбрасывает значение нативного input,
+   * чтобы повторный выбор того же файла срабатывал.
+   */
+  clearFile(): void {
+    this.file = null;
+    const input = this.fileInput()?.nativeElement;
+    if (input) input.value = '';
+  }
+
   upload(): void {
     if (!this.file) return;
 
@@ -416,11 +141,8 @@ export class DocumentDetailComponent {
       next: () => {
         this.comment = '';
         this.file = null;
-
-        // Сброс native input, иначе повторный выбор того же файла не сработает.
         const input = this.fileInput()?.nativeElement;
         if (input) input.value = '';
-
         this.reloadVersions();
         this.reloadTimeline();
       },
@@ -442,30 +164,90 @@ export class DocumentDetailComponent {
     });
   }
 
+  /** Открывает модалку и загружает контент версии для предпросмотра. */
+  async openPreview(v: VersionMeta): Promise<void> {
+    this.revokePreviewUrl();
+    this.previewVersion.set(v);
+    this.previewMode.set(this.detectMode(v.mimeType));
+    this.previewText.set(null);
+    this.previewError.set(null);
+    this.previewLoading.set(true);
+    this.previewOpen.set(true);
+
+    try {
+      const blob = await firstValueFrom(this.api.download(this.documentId, v.versionNumber));
+
+      if (this.previewMode() === 'text') {
+        const text = await blob.text();
+        this.previewText.set(text);
+      } else if (this.previewMode() !== 'unknown') {
+        this.previewBlobUrl.set(URL.createObjectURL(blob));
+      }
+    } catch (err: unknown) {
+      const msg =
+        (err as { error?: { message?: string } })?.error?.message ?? 'Не удалось загрузить файл';
+      this.previewError.set(msg);
+    } finally {
+      this.previewLoading.set(false);
+    }
+  }
+
+  /** Закрывает модалку и освобождает ресурсы. */
+  closePreview(): void {
+    this.previewOpen.set(false);
+    this.previewVersion.set(null);
+    this.previewText.set(null);
+    this.previewError.set(null);
+    this.revokePreviewUrl();
+  }
+
+  /** Определяет режим предпросмотра по MIME. */
+  private detectMode(mime: string): PreviewMode {
+    if (!mime) return 'unknown';
+    const m = mime.toLowerCase();
+    if (
+      m.startsWith('text/') ||
+      m === 'application/json' ||
+      m === 'application/xml' ||
+      m.endsWith('+xml')
+    )
+      return 'text';
+    if (m.startsWith('image/')) return 'image';
+    if (m === 'application/pdf') return 'pdf';
+    if (m.startsWith('video/')) return 'video';
+    if (m.startsWith('audio/')) return 'audio';
+    return 'unknown';
+  }
+
+  /** Отзывает текущий blob URL, если он есть. */
+  private revokePreviewUrl(): void {
+    const url = this.previewBlobUrl();
+    if (url) {
+      URL.revokeObjectURL(url);
+      this.previewBlobUrl.set(null);
+    }
+  }
+
   humanSize(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
   }
 
-  short(id: string): string {
-    return id.slice(0, 8) + '…';
+  authorName(id: string | null | undefined): string {
+    if (!id) return '—';
+    return this.directory.displayName(id) ?? 'Неизвестный аккаунт';
   }
 
-  /**
-   * Достаёт комментарий из payload события, если он там есть.
-   * Старые события (до правки бэкенда) комментария не содержат — вернётся null.
-   */
+  authorTenant(id: string | null | undefined): string | null {
+    return this.directory.tenantId(id);
+  }
+
   eventComment(e: TimelineEvent): string | null {
     const c = e.payload?.['comment'];
     return typeof c === 'string' && c.trim() ? c : null;
   }
 
-  /**
-   * Возвращает payload без поля comment — чтобы в JSON-блоке
-   * не дублировать то, что уже показано отдельной плашкой.
-   * Если после удаления comment полей не осталось — возвращает null.
-   */
   payloadWithoutComment(e: TimelineEvent): Record<string, unknown> | null {
     if (!e.payload) return null;
     const { comment, ...rest } = e.payload as Record<string, unknown>;

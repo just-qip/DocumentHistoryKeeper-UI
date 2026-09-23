@@ -23,6 +23,7 @@ export interface Document {
   title: string;
   docKind: string;
   currentVersionId: string | null;
+  currentVersionAuthorId: string | null;
   versionSeq: number;
   createdAt: string;
   createdBy: string;

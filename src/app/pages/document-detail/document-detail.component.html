@@ -1,0 +1,237 @@
+@if (document(); as d) {
+<nav class="crumbs">
+  <a routerLink="/projects">Проекты</a> /
+  <a [routerLink]="['/projects', d.projectId]">проект</a> /
+  <span>{{ d.title }}</span>
+</nav>
+<header class="page-head">
+  <h1>{{ d.title }}</h1>
+  <span class="kind">{{ d.docKind }}</span>
+</header>
+}
+
+@if (error()) {
+<div class="error">{{ error() }}</div>
+}
+
+<div class="tabs">
+  <button [class.active]="tab() === 'versions'" (click)="tab.set('versions')">
+    Версии ({{ versions().length }})
+  </button>
+  <button [class.active]="tab() === 'timeline'" (click)="tab.set('timeline')">
+    Хронология
+  </button>
+</div>
+
+@if (tab() === 'versions') {
+<div class="card">
+  <form class="upload-form" (ngSubmit)="upload()">
+    <div class="field">
+      <label>Файл</label>
+      <div class="file-picker">
+        <input
+          #fileInput
+          id="fileInput"
+          type="file"
+          class="file-input-hidden"
+          (change)="onFile($event)"
+        />
+        <label for="fileInput" class="file-picker-button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <span>{{ file ? 'Заменить файл' : 'Выбрать файл' }}</span>
+        </label>
+
+        @if (file) {
+        <div class="file-picker-name">
+          <span class="file-name">{{ file.name }}</span>
+          <span class="file-size">{{ humanSize(file.size) }}</span>
+          <button type="button" class="file-clear" (click)="clearFile()"
+                  aria-label="Убрать файл">
+            ✕
+          </button>
+        </div>
+        } @else {
+        <span class="file-picker-hint">Файл не выбран</span>
+        }
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="commentInput">Комментарий</label>
+      <input
+        id="commentInput"
+        name="comment"
+        [(ngModel)]="comment"
+        placeholder="Правки юриста, исправление опечатки…"
+      />
+    </div>
+
+    <button type="submit" [disabled]="!file">Загрузить версию</button>
+  </form>
+
+  <table class="table">
+    <thead>
+    <tr>
+      <th>#</th>
+      <th>Файл</th>
+      <th>Размер</th>
+      <th>Автор</th>
+      <th>Дата</th>
+      <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    @for (v of versions(); track v.id) {
+    <tr>
+      <td><strong>v{{ v.versionNumber }}</strong></td>
+      <td>
+        {{ v.originalName }}
+        <div class="mime">{{ v.mimeType }}</div>
+      </td>
+      <td>{{ humanSize(v.sizeBytes) }}</td>
+      <td>
+        <div class="author-cell">
+          <div class="author-name">{{ authorName(v.authorId) }}</div>
+          @if (authorTenant(v.authorId); as tenant) {
+          <div class="author-tenant">
+            <span class="tenant-label">tenant</span>
+            <code>{{ tenant }}</code>
+          </div>
+          }
+        </div>
+      </td>
+      <td>{{ v.createdAt | date:'short' }}</td>
+      <td class="actions">
+        <button class="ghost" (click)="openPreview(v)">Предпросмотр</button>
+        <button class="ghost" (click)="download(v)">Скачать</button>
+      </td>
+    </tr>
+    @if (v.comment) {
+    <tr class="comment-row">
+      <td></td>
+      <td colspan="5">💬 {{ v.comment }}</td>
+    </tr>
+    }
+    }
+    </tbody>
+  </table>
+</div>
+}
+
+@if (tab() === 'timeline') {
+<div class="card timeline">
+  @if (timeline().length === 0) {
+  <div class="muted">Событий нет.</div>
+  } @else {
+  <ol>
+    @for (e of timeline(); track e.id) {
+    <li>
+      <div class="event-head">
+        <span class="badge" [attr.data-type]="e.type">{{ e.type }}</span>
+        <span class="time">{{ e.at | date:'medium' }}</span>
+      </div>
+
+      <div class="actor">
+        <div class="actor-name">{{ authorName(e.actorId) }}</div>
+        @if (authorTenant(e.actorId); as tenant) {
+        <div class="actor-tenant">
+          <span class="tenant-label">tenant</span>
+          <code>{{ tenant }}</code>
+        </div>
+        }
+      </div>
+
+      @if (eventComment(e); as comment) {
+      <div class="event-comment">💬 {{ comment }}</div>
+      }
+
+      @if (payloadWithoutComment(e); as rest) {
+      <pre>{{ rest | json }}</pre>
+      }
+
+      <div class="hash">hash: <code>{{ e.eventHash }}</code></div>
+    </li>
+    }
+  </ol>
+  @if (nextCursor()) {
+  <button class="ghost" (click)="loadMore()">Загрузить ещё</button>
+  }
+  }
+</div>
+}
+
+<!-- ============================================================
+     Модальное окно предпросмотра — ширина 2/3 экрана
+     ============================================================ -->
+@if (previewOpen()) {
+<div class="modal-backdrop" (click)="closePreview()">
+  <div class="modal" (click)="stopPropagation($event)">
+
+    <header class="modal-head">
+      <div class="modal-title-block">
+        <div class="modal-title">{{ previewVersion()?.originalName }}</div>
+        <div class="modal-subtitle">
+          v{{ previewVersion()?.versionNumber }}
+          · {{ previewVersion()?.mimeType }}
+          · {{ humanSize(previewVersion()?.sizeBytes ?? 0) }}
+        </div>
+      </div>
+      <button class="modal-close" (click)="closePreview()" aria-label="Закрыть">✕</button>
+    </header>
+
+    <div class="modal-body">
+      @if (previewLoading()) {
+      <div class="preview-status">Загрузка…</div>
+      } @else if (previewError()) {
+      <div class="error">{{ previewError() }}</div>
+      } @else {
+      @switch (previewMode()) {
+      @case ('text') {
+      <pre class="preview-text">{{ previewText() }}</pre>
+      }
+      @case ('image') {
+      <img class="preview-image"
+           [src]="previewBlobUrl()!"
+           [alt]="previewVersion()?.originalName" />
+      }
+      @case ('pdf') {
+      <iframe class="preview-pdf"
+              [src]="previewBlobUrl()!"
+              title="PDF preview"></iframe>
+      }
+      @case ('video') {
+      <video class="preview-video"
+             [src]="previewBlobUrl()!"
+             controls></video>
+      }
+      @case ('audio') {
+      <audio class="preview-audio"
+             [src]="previewBlobUrl()!"
+             controls></audio>
+      }
+      @default {
+      <div class="preview-unknown">
+        <div class="preview-unknown-icon">📦</div>
+        <p>Предпросмотр для этого формата недоступен.</p>
+        <button class="primary" (click)="download(previewVersion()!)">
+          Скачать файл
+        </button>
+      </div>
+      }
+      }
+      }
+    </div>
+
+    <footer class="modal-foot">
+      <button class="ghost" (click)="download(previewVersion()!)">Скачать</button>
+      <button class="primary" (click)="closePreview()">Закрыть</button>
+    </footer>
+
+  </div>
+</div>
+}

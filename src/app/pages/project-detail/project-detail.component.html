@@ -1,0 +1,131 @@
+@if (project(); as p) {
+<nav class="crumbs">
+  <a routerLink="/projects">Проекты</a> / <span>{{ p.name }}</span>
+</nav>
+<header class="page-head">
+  <div>
+    <h1>{{ p.name }}</h1>
+    @if (p.description) {
+    <p class="desc">{{ p.description }}</p>
+    }
+  </div>
+  <button class="primary" (click)="showUpload.set(!showUpload())">
+    {{ showUpload() ? 'Отмена' : '+ Загрузить документ' }}
+  </button>
+</header>
+}
+
+@if (error()) {
+<div class="error">{{ error() }}</div>
+}
+
+@if (showUpload()) {
+<form class="card upload-form" (ngSubmit)="upload()">
+  <div class="field">
+    <label for="titleInput">Заголовок</label>
+    <input id="titleInput" name="title" [(ngModel)]="newTitle"
+           placeholder="Например: Договор аренды" />
+  </div>
+
+  <div class="field">
+    <label for="docKindInput">Тип</label>
+    <input id="docKindInput" name="docKind" [(ngModel)]="newDocKind"
+           placeholder="CONTRACT, INVOICE, …" />
+  </div>
+
+  <div class="field">
+    <label>Файл</label>
+    <div class="file-picker">
+      <input
+        #fileInput
+        id="fileInput"
+        type="file"
+        class="file-input-hidden"
+        (change)="onFile($event)"
+      />
+      <label for="fileInput" class="file-picker-button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span>{{ file ? 'Заменить файл' : 'Выбрать файл' }}</span>
+      </label>
+
+      @if (file) {
+      <div class="file-picker-name">
+        <span class="file-name">{{ file.name }}</span>
+        <span class="file-size">{{ humanSize(file.size) }}</span>
+        <button type="button" class="file-clear" (click)="clearFile()"
+                aria-label="Убрать файл">✕</button>
+      </div>
+      } @else {
+      <span class="file-picker-hint">Файл не выбран</span>
+      }
+    </div>
+  </div>
+
+  <button type="submit" class="primary"
+          [disabled]="!newTitle.trim() || !newDocKind.trim() || !file">
+    Загрузить
+  </button>
+</form>
+}
+
+@if (loading()) {
+<div class="muted">Загрузка…</div>
+} @else if (documents().length === 0) {
+<div class="empty">В проекте пока нет документов.</div>
+} @else {
+<table class="table">
+  <thead>
+  <tr>
+    <th>Заголовок</th>
+    <th>Тип</th>
+    <th>Создал</th>
+    <th>Изменил</th>
+    <th>Обновлён</th>
+  </tr>
+  </thead>
+  <tbody>
+  @for (d of documents(); track d.id) {
+  <tr>
+    <td>
+      <a [routerLink]="['/projects', projectId, 'documents', d.id]">
+        {{ d.title }}
+      </a>
+    </td>
+    <td>{{ d.docKind }}</td>
+    <td>
+      <div class="author-cell">
+        <div class="author-name">{{ authorName(d.createdBy) }}</div>
+        @if (authorTenant(d.createdBy); as tenant) {
+        <div class="author-tenant">
+          <span class="tenant-label">tenant</span>
+          <code>{{ tenant }}</code>
+        </div>
+        }
+      </div>
+    </td>
+    <td>
+      <div class="author-cell">
+        @if (d.currentVersionAuthorId) {
+        <div class="author-name">{{ authorName(d.currentVersionAuthorId) }}</div>
+        @if (authorTenant(d.currentVersionAuthorId); as tenant) {
+        <div class="author-tenant">
+          <span class="tenant-label">tenant</span>
+          <code>{{ tenant }}</code>
+        </div>
+        }
+        } @else {
+        <span class="muted-dash">—</span>
+        }
+      </div>
+    </td>
+    <td>{{ d.updatedAt | date:'short' }}</td>
+  </tr>
+  }
+  </tbody>
+</table>
+}
