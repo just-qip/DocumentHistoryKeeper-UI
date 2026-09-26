@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
+import { adminGuard } from './core/admin.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'projects' },
@@ -28,6 +29,12 @@ export const routes: Routes = [
       import('./pages/document-detail/document-detail.component').then(
         (m) => m.DocumentDetailComponent,
       ),
+  },
+  {
+    path: 'admin/access',
+    canActivate: [authGuard, adminGuard],
+    loadComponent: () =>
+      import('./pages/access-admin/access-admin.component').then((m) => m.AccessAdminComponent),
   },
   { path: '**', redirectTo: 'projects' },
 ];

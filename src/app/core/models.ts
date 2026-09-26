@@ -1,15 +1,17 @@
+export type SystemRole = 'USER' | 'ADMIN';
+export type ProjectRole = 'VIEWER' | 'EDITOR' | 'OWNER';
+
 export interface Account {
   id: string;
-  tenantId: string;
   email: string;
   displayName: string;
   status: string;
+  systemRole: SystemRole;
   createdAt: string;
 }
 
 export interface Project {
   id: string;
-  tenantId: string;
   name: string;
   description: string | null;
   createdAt: string;
@@ -60,4 +62,13 @@ export interface TimelinePage {
   documentId: string;
   entries: TimelineEvent[];
   nextCursor: string | null;
+}
+
+export interface ProjectAccess {
+  id: string;
+  projectId: string;
+  accountId: string;
+  role: ProjectRole;
+  grantedAt: string;
+  grantedBy: string | null;
 }

@@ -88,6 +88,10 @@ export class ProjectDetailComponent {
       });
   }
 
+  /**
+   * @param bytes размер в байтах
+   * @returns человекочитаемый размер
+   */
   humanSize(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -95,21 +99,11 @@ export class ProjectDetailComponent {
   }
 
   /**
-   * Имя автора по id. Если в справочнике нет — «Неизвестный аккаунт».
-   *
-   * @param id идентификатор актора
+   * @param id идентификатор аккаунта
+   * @returns displayName или «Неизвестный аккаунт»
    */
   authorName(id: string | null | undefined): string {
     if (!id) return '—';
     return this.directory.displayName(id) ?? 'Неизвестный аккаунт';
-  }
-
-  /**
-   * Тенант актора по id. Резолвится через справочник.
-   *
-   * @param id идентификатор актора
-   */
-  authorTenant(id: string | null | undefined): string | null {
-    return this.directory.tenantId(id);
   }
 }

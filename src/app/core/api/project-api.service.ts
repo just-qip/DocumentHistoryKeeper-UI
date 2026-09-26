@@ -18,8 +18,8 @@ export class ProjectApiService {
     return this.http.get<Project>(`${this.base}/${id}`);
   }
 
-  create(tenantId: string, name: string, description: string | null): Observable<Project> {
-    return this.http.post<Project>(this.base, { tenantId, name, description });
+  create(name: string, description: string | null): Observable<Project> {
+    return this.http.post<Project>(this.base, { name, description });
   }
 
   listDocuments(projectId: string, page = 0, size = 100): Observable<Document[]> {

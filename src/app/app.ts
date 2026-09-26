@@ -1,7 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, computed, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { AccountContextService } from './core/account-context.service';
-import { AccountApiService } from './core/api/account-api.service';
+import { AuthApiService } from './core/api/auth-api.service';
 import pkg from '../../package.json';
 
 @Component({
@@ -12,24 +13,30 @@ import pkg from '../../package.json';
 })
 export class App implements OnInit {
   private readonly ctx = inject(AccountContextService);
-  private readonly accounts = inject(AccountApiService);
+  private readonly auth = inject(AuthApiService);
   private readonly router = inject(Router);
 
   readonly account = this.ctx.account;
+  readonly isAdmin = computed(() => this.ctx.account()?.systemRole === 'ADMIN');
   readonly version = pkg.version;
 
-  ngOnInit(): void {
-    const current = this.ctx.account();
-    if (current && !current.displayName) {
-      this.accounts.get(current.id).subscribe({
-        next: (fresh) => this.ctx.refresh(fresh),
-        error: () => this.ctx.clear(),
-      });
+  async ngOnInit(): Promise<void> {
+    if (!this.ctx.isAuthenticated()) return;
+    try {
+      const fresh = await firstValueFrom(this.auth.me());
+      this.ctx.refresh(fresh);
+    } catch {
+      this.ctx.clear();
     }
   }
 
-  logout(): void {
+  async logout(): Promise<void> {
+    try {
+      await firstValueFrom(this.auth.logout());
+    } catch {
+      // не важно
+    }
     this.ctx.clear();
-    this.router.navigate(['/login']);
+    await this.router.navigate(['/login']);
   }
 }

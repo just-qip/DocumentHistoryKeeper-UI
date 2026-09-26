@@ -1,10 +1,14 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AccountApiService } from '../../core/api/account-api.service';
+import { firstValueFrom } from 'rxjs';
+import { AccountChoice, AuthApiService } from '../../core/api/auth-api.service';
 import { AccountContextService } from '../../core/account-context.service';
-import { Account } from '../../core/models';
-import { environment } from '../../../environments/environment';
+import { AccountDirectoryService } from '../../core/account-directory.service';
+import { SrpService } from '../../core/srp.service';
+
+/** Экран, который показывается пользователю. */
+type View = 'email' | 'password' | 'empty' | 'register';
 
 @Component({
   selector: 'app-login',
@@ -12,48 +16,98 @@ import { environment } from '../../../environments/environment';
   imports: [FormsModule],
   template: `
     <div class="login">
-      <h1>Вход</h1>
-      <p class="hint">Выберите аккаунт или создайте новый.</p>
+      <h1>
+        @switch (view()) {
+          @case ('email') {
+            Вход
+          }
+          @case ('password') {
+            Пароль
+          }
+          @case ('empty') {
+            Аккаунт не найден
+          }
+          @case ('register') {
+            Регистрация
+          }
+        }
+      </h1>
 
       @if (error()) {
         <div class="error">{{ error() }}</div>
       }
 
-      <label>Tenant ID</label>
-      <input [(ngModel)]="tenantId" placeholder="UUID" />
+      @switch (view()) {
+        @case ('email') {
+          <p class="hint">Введите email — мы найдём ваш аккаунт.</p>
+          <label>Email</label>
+          <input
+            [(ngModel)]="emailField"
+            autocomplete="username"
+            (keydown.enter)="continueWithEmail()"
+          />
+          <div class="actions">
+            <button (click)="continueWithEmail()" [disabled]="busy() || !emailField.trim()">
+              {{ busy() ? '…' : 'Продолжить' }}
+            </button>
+            <button class="ghost" type="button" (click)="goRegister()">Регистрация</button>
+          </div>
+        }
 
-      <div class="actions">
-        <button (click)="load()" [disabled]="loading()">
-          {{ loading() ? 'Загрузка…' : 'Загрузить аккаунты' }}
-        </button>
-      </div>
-
-      @if (accounts().length > 0) {
-        <ul class="accounts">
-          @for (a of accounts(); track a.id) {
-            <li (click)="select(a)">
-              <div class="name">{{ a.displayName }}</div>
-              <div class="email">{{ a.email }}</div>
-              <code>{{ a.id }}</code>
-            </li>
+        @case ('password') {
+          @if (selected(); as s) {
+            <div class="picked">
+              <div class="picked-name">{{ s.displayName }}</div>
+              <code>{{ submittedEmail() }}</code>
+            </div>
           }
-        </ul>
-      }
+          <label>Пароль</label>
+          <input
+            type="password"
+            [(ngModel)]="passwordField"
+            autocomplete="current-password"
+            (keydown.enter)="submitLogin()"
+          />
+          <div class="actions">
+            <button (click)="submitLogin()" [disabled]="busy() || !passwordField">
+              {{ busy() ? '…' : 'Войти' }}
+            </button>
+            <button class="ghost" type="button" (click)="backToEmail()">Назад</button>
+          </div>
+        }
 
-      <details>
-        <summary>Создать аккаунт</summary>
-        <div class="create">
-          <input [(ngModel)]="newEmail" placeholder="email" />
-          <input [(ngModel)]="newName" placeholder="display name" />
-          <button (click)="createAccount()">Создать</button>
-        </div>
-      </details>
+        @case ('empty') {
+          <p class="hint">
+            Аккаунт с email <code>{{ submittedEmail() }}</code> не найден.
+          </p>
+          <div class="actions">
+            <button (click)="goRegister()">Зарегистрироваться</button>
+            <button class="ghost" type="button" (click)="backToEmail()">Назад</button>
+          </div>
+        }
+
+        @case ('register') {
+          <p class="hint">Создание аккаунта. Пароль не покидает браузер.</p>
+          <label>Email</label>
+          <input [(ngModel)]="emailField" autocomplete="username" />
+          <label>Отображаемое имя</label>
+          <input [(ngModel)]="displayNameField" />
+          <label>Пароль</label>
+          <input type="password" [(ngModel)]="passwordField" autocomplete="new-password" />
+          <div class="actions">
+            <button (click)="submitRegister()" [disabled]="busy() || !canRegister()">
+              {{ busy() ? '…' : 'Создать' }}
+            </button>
+            <button class="ghost" type="button" (click)="backToEmail()">Назад</button>
+          </div>
+        }
+      }
     </div>
   `,
   styles: [
     `
       .login {
-        max-width: 520px;
+        max-width: 480px;
         margin: 40px auto;
         background: #fff;
         padding: 32px;
@@ -62,10 +116,12 @@ import { environment } from '../../../environments/environment';
       }
       h1 {
         margin: 0 0 8px;
+        font-size: 22px;
       }
       .hint {
         color: #64748b;
-        margin: 0 0 24px;
+        margin: 0 0 16px;
+        font-size: 13px;
       }
       label {
         display: block;
@@ -81,8 +137,15 @@ import { environment } from '../../../environments/environment';
         font: inherit;
         box-sizing: border-box;
       }
+      input:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
       .actions {
-        margin-top: 12px;
+        display: flex;
+        gap: 8px;
+        margin-top: 20px;
       }
       button {
         padding: 8px 16px;
@@ -97,32 +160,9 @@ import { environment } from '../../../environments/environment';
         opacity: 0.5;
         cursor: default;
       }
-      .accounts {
-        list-style: none;
-        padding: 0;
-        margin: 24px 0 0;
-      }
-      .accounts li {
-        padding: 12px;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        margin-bottom: 8px;
-        cursor: pointer;
-        transition: background 0.15s;
-      }
-      .accounts li:hover {
+      button.ghost {
         background: #f1f5f9;
-      }
-      .name {
-        font-weight: 600;
-      }
-      .email {
-        color: #64748b;
-        font-size: 13px;
-      }
-      code {
-        font-size: 11px;
-        color: #94a3b8;
+        color: #1d4ed8;
       }
       .error {
         padding: 10px 12px;
@@ -132,62 +172,124 @@ import { environment } from '../../../environments/environment';
         font-size: 13px;
         margin-bottom: 12px;
       }
-      details {
-        margin-top: 24px;
-        font-size: 13px;
-        color: #334155;
+      code {
+        font-size: 11px;
+        color: #64748b;
+        font-family: ui-monospace, SFMono-Regular, monospace;
       }
-      .create {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-top: 12px;
+      .picked {
+        padding: 12px;
+        background: #f8fafc;
+        border-radius: 8px;
+        margin-bottom: 12px;
+      }
+      .picked-name {
+        font-weight: 600;
+        margin-bottom: 2px;
       }
     `,
   ],
 })
 export class LoginComponent {
-  private readonly api = inject(AccountApiService);
+  private readonly auth = inject(AuthApiService);
+  private readonly srp = inject(SrpService);
   private readonly ctx = inject(AccountContextService);
+  private readonly directory = inject(AccountDirectoryService);
   private readonly router = inject(Router);
 
-  tenantId = environment.defaultTenantId;
-  newEmail = '';
-  newName = '';
-
-  readonly loading = signal(false);
+  readonly view = signal<View>('email');
+  readonly selected = signal<AccountChoice | null>(null);
+  readonly submittedEmail = signal('');
+  readonly busy = signal(false);
   readonly error = signal<string | null>(null);
-  readonly accounts = signal<Account[]>([]);
 
-  load(): void {
-    this.loading.set(true);
+  emailField = '';
+  passwordField = '';
+  displayNameField = '';
+
+  canRegister(): boolean {
+    return !!this.emailField.trim() && !!this.displayNameField.trim() && !!this.passwordField;
+  }
+
+  async continueWithEmail(): Promise<void> {
+    const email = this.emailField.trim();
+    if (!email) return;
+
     this.error.set(null);
-    this.api.list(this.tenantId).subscribe({
-      next: (list) => {
-        this.accounts.set(list);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        this.error.set(err?.error?.message ?? 'Не удалось загрузить аккаунты');
-        this.loading.set(false);
-      },
-    });
+    this.busy.set(true);
+    try {
+      const choice = await firstValueFrom(this.auth.lookup(email));
+      this.submittedEmail.set(email);
+
+      if (!choice) {
+        this.view.set('empty');
+      } else {
+        this.selected.set(choice);
+        this.view.set('password');
+      }
+    } catch (e: any) {
+      this.error.set(e?.error?.message ?? e?.message ?? 'Ошибка поиска аккаунта');
+    } finally {
+      this.busy.set(false);
+    }
   }
 
-  select(a: Account): void {
-    this.ctx.setAccount(a); // ← было this.ctx.setAccount(a.id)
-    this.router.navigate(['/projects']);
+  backToEmail(): void {
+    this.view.set('email');
+    this.selected.set(null);
+    this.passwordField = '';
+    this.error.set(null);
   }
 
-  createAccount(): void {
-    if (!this.newEmail || !this.newName) return;
-    this.api.create(this.tenantId, this.newEmail, this.newName).subscribe({
-      next: (a) => {
-        this.newEmail = '';
-        this.newName = '';
-        this.accounts.update((prev) => [a, ...prev]);
-      },
-      error: (err) => this.error.set(err?.error?.message ?? 'Ошибка создания'),
-    });
+  goRegister(): void {
+    this.error.set(null);
+    this.view.set('register');
+  }
+
+  async submitLogin(): Promise<void> {
+    const email = this.submittedEmail();
+    const password = this.passwordField;
+    if (!email || !password) return;
+
+    this.error.set(null);
+    this.busy.set(true);
+    try {
+      await this.doLogin(email, password);
+    } catch (e: any) {
+      this.error.set(e?.error?.message ?? e?.message ?? 'Неверный пароль');
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async submitRegister(): Promise<void> {
+    const email = this.emailField.trim();
+    const displayName = this.displayNameField.trim() || email;
+    const password = this.passwordField;
+    if (!email || !password) return;
+
+    this.error.set(null);
+    this.busy.set(true);
+    try {
+      const { saltHex, verifierHex } = await this.srp.register(email, password);
+      await firstValueFrom(this.auth.register({ email, displayName, saltHex, verifierHex }));
+      await this.doLogin(email, password);
+    } catch (e: any) {
+      this.error.set(e?.error?.message ?? e?.message ?? 'Ошибка регистрации');
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  private async doLogin(email: string, password: string): Promise<void> {
+    const ch = await firstValueFrom(this.auth.challenge(email));
+    const proof = await this.srp.challenge(email, password, ch.saltHex, ch.BHex);
+    const resp = await firstValueFrom(this.auth.verify(ch.challengeId, proof.AHex, proof.M1Hex));
+    const ok = await this.srp.verifyServer(proof.AHex, proof.M1Hex, proof.K, resp.M2Hex);
+    if (!ok) throw new Error('server proof mismatch');
+
+    this.directory.reset();
+    this.ctx.setAccount(resp.account, resp.token);
+    await this.router.navigate(['/projects']);
   }
 }

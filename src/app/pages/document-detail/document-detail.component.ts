@@ -56,7 +56,6 @@ export class DocumentDetailComponent {
   file: File | null = null;
 
   constructor() {
-    // Блокируем скролл body, пока модалка открыта.
     effect((onCleanup) => {
       if (this.previewOpen()) {
         const prev = document.body.style.overflow;
@@ -67,7 +66,6 @@ export class DocumentDetailComponent {
       }
     });
 
-    // Отзываем blob-URL при разрушении компонента, чтобы не текла память.
     this.destroyRef.onDestroy(() => this.revokePreviewUrl());
 
     this.api.get(this.documentId).subscribe({
@@ -79,13 +77,11 @@ export class DocumentDetailComponent {
     void this.directory.ensureLoaded();
   }
 
-  /** Escape закрывает модалку. */
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.previewOpen()) this.closePreview();
   }
 
-  /** Останавливает всплытие клика, чтобы клик по карточке модалки не закрывал её. */
   stopPropagation(e: Event): void {
     e.stopPropagation();
   }
@@ -121,10 +117,6 @@ export class DocumentDetailComponent {
     this.file = input.files?.[0] ?? null;
   }
 
-  /**
-   * Очищает выбранный файл и сбрасывает значение нативного input,
-   * чтобы повторный выбор того же файла срабатывал.
-   */
   clearFile(): void {
     this.file = null;
     const input = this.fileInput()?.nativeElement;
@@ -228,19 +220,23 @@ export class DocumentDetailComponent {
     }
   }
 
+  /**
+   * @param bytes размер в байтах
+   * @returns человекочитаемый размер
+   */
   humanSize(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
   }
 
+  /**
+   * @param id идентификатор аккаунта
+   * @returns displayName или «Неизвестный аккаунт»
+   */
   authorName(id: string | null | undefined): string {
     if (!id) return '—';
     return this.directory.displayName(id) ?? 'Неизвестный аккаунт';
-  }
-
-  authorTenant(id: string | null | undefined): string | null {
-    return this.directory.tenantId(id);
   }
 
   eventComment(e: TimelineEvent): string | null {

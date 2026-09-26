@@ -94,17 +94,7 @@
         <div class="mime">{{ v.mimeType }}</div>
       </td>
       <td>{{ humanSize(v.sizeBytes) }}</td>
-      <td>
-        <div class="author-cell">
-          <div class="author-name">{{ authorName(v.authorId) }}</div>
-          @if (authorTenant(v.authorId); as tenant) {
-          <div class="author-tenant">
-            <span class="tenant-label">tenant</span>
-            <code>{{ tenant }}</code>
-          </div>
-          }
-        </div>
-      </td>
+      <td>{{ authorName(v.authorId) }}</td>
       <td>{{ v.createdAt | date:'short' }}</td>
       <td class="actions">
         <button class="ghost" (click)="openPreview(v)">Предпросмотр</button>
@@ -138,12 +128,6 @@
 
       <div class="actor">
         <div class="actor-name">{{ authorName(e.actorId) }}</div>
-        @if (authorTenant(e.actorId); as tenant) {
-        <div class="actor-tenant">
-          <span class="tenant-label">tenant</span>
-          <code>{{ tenant }}</code>
-        </div>
-        }
       </div>
 
       @if (eventComment(e); as comment) {
@@ -166,7 +150,7 @@
 }
 
 <!-- ============================================================
-     Модальное окно предпросмотра — ширина 2/3 экрана
+     Модальное окно предпросмотра
      ============================================================ -->
 @if (previewOpen()) {
 <div class="modal-backdrop" (click)="closePreview()">

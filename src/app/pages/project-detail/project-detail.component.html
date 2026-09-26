@@ -97,31 +97,13 @@
       </a>
     </td>
     <td>{{ d.docKind }}</td>
+    <td>{{ authorName(d.createdBy) }}</td>
     <td>
-      <div class="author-cell">
-        <div class="author-name">{{ authorName(d.createdBy) }}</div>
-        @if (authorTenant(d.createdBy); as tenant) {
-        <div class="author-tenant">
-          <span class="tenant-label">tenant</span>
-          <code>{{ tenant }}</code>
-        </div>
-        }
-      </div>
-    </td>
-    <td>
-      <div class="author-cell">
-        @if (d.currentVersionAuthorId) {
-        <div class="author-name">{{ authorName(d.currentVersionAuthorId) }}</div>
-        @if (authorTenant(d.currentVersionAuthorId); as tenant) {
-        <div class="author-tenant">
-          <span class="tenant-label">tenant</span>
-          <code>{{ tenant }}</code>
-        </div>
-        }
-        } @else {
-        <span class="muted-dash">—</span>
-        }
-      </div>
+      @if (d.currentVersionAuthorId) {
+      {{ authorName(d.currentVersionAuthorId) }}
+      } @else {
+      <span class="muted-dash">—</span>
+      }
     </td>
     <td>{{ d.updatedAt | date:'short' }}</td>
   </tr>

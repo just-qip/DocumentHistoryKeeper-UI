@@ -4,7 +4,6 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProjectApiService } from '../../core/api/project-api.service';
 import { Project } from '../../core/models';
-import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-projects',
@@ -96,7 +95,6 @@ import { environment } from '../../../environments/environment';
         color: #64748b;
         font-size: 13px;
       }
-
       .primary {
         padding: 10px 20px;
         border: 0;
@@ -122,7 +120,6 @@ import { environment } from '../../../environments/environment';
         transform: none;
         box-shadow: none;
       }
-
       .create-card {
         display: flex;
         flex-direction: column;
@@ -139,9 +136,6 @@ import { environment } from '../../../environments/environment';
         border-radius: 8px;
         font: inherit;
         font-size: 14px;
-        transition:
-          border-color 0.15s,
-          box-shadow 0.15s;
       }
       .create-card input:focus {
         outline: none;
@@ -151,15 +145,11 @@ import { environment } from '../../../environments/environment';
       .create-card button {
         align-self: flex-start;
       }
-
-      /* ---------- Grid and cards ---------- */
-
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
         gap: 24px;
       }
-
       .project-card {
         display: block;
         background: #fff;
@@ -182,12 +172,10 @@ import { environment } from '../../../environments/environment';
           0 12px 28px rgba(15, 23, 42, 0.1),
           0 4px 10px rgba(15, 23, 42, 0.06);
       }
-
       .project-accent {
         height: 4px;
         background: linear-gradient(90deg, #2563eb, #60a5fa);
       }
-
       .project-body {
         padding: 24px;
         display: flex;
@@ -195,7 +183,6 @@ import { environment } from '../../../environments/environment';
         gap: 10px;
         height: calc(100% - 4px);
       }
-
       .project-body h2 {
         margin: 0;
         font-size: 18px;
@@ -203,7 +190,6 @@ import { environment } from '../../../environments/environment';
         color: #0f172a;
         letter-spacing: -0.2px;
       }
-
       .project-desc {
         margin: 0;
         color: #475569;
@@ -214,12 +200,10 @@ import { environment } from '../../../environments/environment';
         -webkit-box-orient: vertical;
         overflow: hidden;
       }
-
       .muted-desc {
         color: #94a3b8;
         font-style: italic;
       }
-
       .project-meta {
         margin-top: auto;
         display: flex;
@@ -229,14 +213,10 @@ import { environment } from '../../../environments/environment';
         font-size: 12px;
         padding-top: 12px;
       }
-
       .project-meta svg {
         width: 14px;
         height: 14px;
       }
-
-      /* ---------- States ---------- */
-
       .empty {
         padding: 64px 40px;
         text-align: center;
@@ -254,11 +234,9 @@ import { environment } from '../../../environments/environment';
         font-size: 14px;
         margin-top: 6px;
       }
-
       .muted {
         color: #64748b;
       }
-
       .error {
         padding: 12px 16px;
         border-radius: 8px;
@@ -303,16 +281,14 @@ export class ProjectsComponent {
   create(): void {
     const name = this.newName.trim();
     if (!name) return;
-    this.api
-      .create(environment.defaultTenantId, name, this.newDescription.trim() || null)
-      .subscribe({
-        next: (p) => {
-          this.projects.update((prev) => [p, ...prev]);
-          this.newName = '';
-          this.newDescription = '';
-          this.showCreate.set(false);
-        },
-        error: (err) => this.error.set(err?.error?.message ?? 'Ошибка создания'),
-      });
+    this.api.create(name, this.newDescription.trim() || null).subscribe({
+      next: (p) => {
+        this.projects.update((prev) => [p, ...prev]);
+        this.newName = '';
+        this.newDescription = '';
+        this.showCreate.set(false);
+      },
+      error: (err) => this.error.set(err?.error?.message ?? 'Ошибка создания'),
+    });
   }
 }

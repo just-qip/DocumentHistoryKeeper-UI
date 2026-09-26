@@ -9,8 +9,8 @@ export class AccountApiService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiBaseUrl}/accounts`;
 
-  list(tenantId: string): Observable<Account[]> {
-    const params = new HttpParams().set('tenantId', tenantId);
+  list(page = 0, size = 500): Observable<Account[]> {
+    const params = new HttpParams().set('page', page).set('size', size);
     return this.http.get<Account[]>(this.base, { params });
   }
 
@@ -18,7 +18,7 @@ export class AccountApiService {
     return this.http.get<Account>(`${this.base}/${id}`);
   }
 
-  create(tenantId: string, email: string, displayName: string): Observable<Account> {
-    return this.http.post<Account>(this.base, { tenantId, email, displayName });
+  create(email: string, displayName: string): Observable<Account> {
+    return this.http.post<Account>(this.base, { email, displayName });
   }
 }

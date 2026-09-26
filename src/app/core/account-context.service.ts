@@ -1,36 +1,44 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { Account } from './models';
+import { SessionService } from './session.service';
 
-const STORAGE_KEY = 'dhk.currentAccount';
+const KEY = 'dhk.currentAccount';
 
+/** Хранит аккаунт и сессию. */
 @Injectable({ providedIn: 'root' })
 export class AccountContextService {
+  private readonly session = inject(SessionService);
   private readonly _account = signal<Account | null>(this.read());
 
   readonly account = computed(() => this._account());
   readonly accountId = computed(() => this._account()?.id ?? null);
-  readonly isAuthenticated = computed(() => this._account() !== null);
+  readonly isAuthenticated = computed(
+    () => this._account() !== null && this.session.token() !== null,
+  );
 
-  setAccount(account: Account | null): void {
+  setAccount(account: Account | null, token?: string | null): void {
     if (account) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(account));
+      localStorage.setItem(KEY, JSON.stringify(account));
       this._account.set(account);
+      if (token !== undefined) this.session.set(token);
     } else {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(KEY);
       this._account.set(null);
+      this.session.clear();
     }
   }
 
   refresh(account: Account): void {
-    this.setAccount(account);
+    localStorage.setItem(KEY, JSON.stringify(account));
+    this._account.set(account);
   }
 
   clear(): void {
-    this.setAccount(null);
+    this.setAccount(null, null);
   }
 
   private read(): Account | null {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     try {
       const parsed = JSON.parse(raw);
@@ -38,7 +46,7 @@ export class AccountContextService {
         return parsed as Account;
       }
     } catch {
-      // повреждённый JSON — считаем, что не залогинен
+      // повреждённый JSON
     }
     return null;
   }
