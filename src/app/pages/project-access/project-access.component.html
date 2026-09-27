@@ -1,0 +1,166 @@
+@if (project(); as p) {
+<nav class="crumbs">
+  <a routerLink="/projects">Проекты</a>
+  <span class="sep">/</span>
+  <a [routerLink]="['/projects', p.id]">{{ p.name }}</a>
+  <span class="sep">/</span>
+  <span class="crumb-current">Участники</span>
+</nav>
+
+<header class="page-head">
+  <div>
+    <h1>Участники проекта</h1>
+    <p class="subtitle">
+      {{ p.name }} · {{ accesses().length }} чел.
+    </p>
+  </div>
+  @if (canManage()) {
+  <button class="btn btn-primary" (click)="toggleGrant()">
+    {{ showGrant() ? 'Отмена' : '+ Добавить участника' }}
+  </button>
+  }
+</header>
+}
+
+@if (error()) {
+<div class="alert">{{ error() }}</div>
+}
+@if (success()) {
+<div class="flash">{{ success() }}</div>
+}
+
+@if (showGrant() && canManage()) {
+<form class="grant-form" (ngSubmit)="grant()">
+
+  <div class="field search-field">
+    <label class="field-label" for="candSearch">Найти аккаунт</label>
+    <input
+      id="candSearch"
+      name="candidateQuery"
+      type="text"
+      autocomplete="off"
+      placeholder="Email или имя (мин. 2 символа)"
+      [ngModel]="candidateQuery"
+      (ngModelChange)="onQueryInput($event)"
+    />
+
+    @if (queryTooShort()) {
+    <div class="search-status">
+      Введите ещё {{ 2 - candidateQuery.trim().length }} символ…
+    </div>
+    }
+
+    @if (searching()) {
+    <div class="search-status">Поиск…</div>
+    }
+
+    @if (!selectedCandidate() && candidates().length > 0) {
+    <ul class="search-results">
+      @for (c of candidates(); track c.accountId) {
+      <li (click)="pickCandidate(c)">
+        @if (candidateAvatar(c); as src) {
+        <img class="cand-avatar-img" [src]="src" [alt]="c.displayName" />
+        } @else {
+        <div class="cand-avatar">{{ candidateInitial(c) }}</div>
+        }
+        <div class="cand-info">
+          <div class="cand-name">{{ c.displayName }}</div>
+          <div class="cand-email">{{ c.email }}</div>
+        </div>
+      </li>
+      }
+    </ul>
+    }
+
+    @if (!selectedCandidate()
+    && !searching()
+    && !queryTooShort()
+    && candidateQuery.trim().length >= 2
+    && candidates().length === 0) {
+    <div class="search-empty">Никого не найдено</div>
+    }
+  </div>
+
+  <div class="field">
+    <label class="field-label" for="roleSel">Роль</label>
+    <select id="roleSel" name="role" [(ngModel)]="newRole">
+      <option value="VIEWER">VIEWER — только чтение</option>
+      <option value="EDITOR">EDITOR — правка и загрузка версий</option>
+      <option value="OWNER">OWNER — полный доступ</option>
+    </select>
+  </div>
+
+  <button type="submit" class="btn btn-primary" [disabled]="!selectedCandidate()">
+    Добавить
+  </button>
+</form>
+}
+
+@if (loading()) {
+<div class="muted">Загрузка…</div>
+} @else if (accesses().length === 0) {
+<div class="empty">
+  <div class="empty-title">Пока никого нет в проекте</div>
+  <div class="empty-hint">
+    @if (canManage()) {
+    Нажмите «+ Добавить участника», чтобы пригласить коллегу.
+    } @else {
+    Участники появятся здесь, когда владелец выдаст доступ.
+    }
+  </div>
+</div>
+} @else {
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+    <tr>
+      <th>Участник</th>
+      <th>Роль</th>
+      <th>Добавлен</th>
+      @if (canManage()) {
+      <th></th>
+      }
+    </tr>
+    </thead>
+    <tbody>
+    @for (a of accesses(); track a.id) {
+    <tr>
+      <td>
+        <div class="user-cell">
+          @if (avatarSrc(a); as src) {
+          <img class="user-avatar-img" [src]="src" [alt]="a.accountName" />
+          } @else {
+          <div class="user-avatar">{{ initial(a) }}</div>
+          }
+          <div class="user-info">
+            <div class="user-name">{{ a.accountName }}</div>
+            @if (a.accountEmail) {
+            <div class="user-email">{{ a.accountEmail }}</div>
+            }
+          </div>
+        </div>
+      </td>
+      <td>
+        @if (canManage()) {
+        <select [ngModel]="a.role" (ngModelChange)="changeRole(a, $event)"
+                [ngModelOptions]="{ standalone: true }">
+          <option value="VIEWER">VIEWER</option>
+          <option value="EDITOR">EDITOR</option>
+          <option value="OWNER">OWNER</option>
+        </select>
+        } @else {
+        <span class="role-badge">{{ a.role }}</span>
+        }
+      </td>
+      <td class="col-date">{{ a.grantedAt | date:'short' }}</td>
+      @if (canManage()) {
+      <td>
+        <button class="btn-danger-link" (click)="revoke(a)">Убрать</button>
+      </td>
+      }
+    </tr>
+    }
+    </tbody>
+  </table>
+</div>
+}

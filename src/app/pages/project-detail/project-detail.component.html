@@ -15,9 +15,14 @@
     <p class="desc">{{ p.description }}</p>
     }
   </div>
-  <button class="btn btn-primary" (click)="showUpload.set(!showUpload())">
-    {{ showUpload() ? 'Отмена' : '+ Загрузить документ' }}
-  </button>
+  <div class="head-actions">
+    <a class="btn btn-ghost" [routerLink]="['/projects', projectId, 'access']">
+      Участники
+    </a>
+    <button class="btn btn-primary" (click)="showUpload.set(!showUpload())">
+      {{ showUpload() ? 'Отмена' : '+ Загрузить документ' }}
+    </button>
+  </div>
 </header>
 }
 

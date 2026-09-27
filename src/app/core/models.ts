@@ -18,6 +18,8 @@ export interface Project {
   createdAt: string;
   createdBy: string;
   archivedAt: string | null;
+  /** Роль текущего пользователя: ADMIN / OWNER / EDITOR / VIEWER или null. */
+  myRole: string | null;
 }
 
 export interface Document {
@@ -69,6 +71,12 @@ export interface ProjectAccess {
   id: string;
   projectId: string;
   accountId: string;
+  /** Отображаемое имя аккаунта (приходит с сервера). */
+  accountName: string;
+  /** Email аккаунта. */
+  accountEmail: string;
+  /** Публичный URL аватара (относительно apiBaseUrl) или null. */
+  accountAvatarUrl: string | null;
   role: ProjectRole;
   grantedAt: string;
   grantedBy: string | null;

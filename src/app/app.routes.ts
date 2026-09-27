@@ -36,6 +36,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'projects/:projectId/access',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/project-access/project-access.component').then(
+        (m) => m.ProjectAccessComponent,
+      ),
+  },
+  {
     path: 'projects/:projectId/documents/:documentId',
     canActivate: [authGuard],
     loadComponent: () =>
