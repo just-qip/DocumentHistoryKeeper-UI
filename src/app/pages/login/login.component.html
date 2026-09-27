@@ -1,0 +1,133 @@
+<div class="login-page">
+  <div class="login-inner">
+
+    <header class="login-head">
+      <div class="eyebrow">
+        <span class="eyebrow-dot"></span>
+        <span>SRP6 · Безопасный вход</span>
+      </div>
+      <h1>
+        @switch (view()) {
+        @case ('email') { Вход }
+        @case ('password') { Вход }
+        @case ('empty') { Аккаунт не найден }
+        @case ('register') { Регистрация }
+        }
+      </h1>
+      <p class="lede">
+        @switch (view()) {
+        @case ('email') { Введите email — мы найдём ваш аккаунт. }
+        @case ('password') { Введите пароль. Он не покидает браузер. }
+        @case ('empty') { Такого аккаунта нет. Можно зарегистрироваться. }
+        @case ('register') { Создайте аккаунт. Пароль не покидает браузер. }
+        }
+      </p>
+    </header>
+
+    @if (error()) {
+    <div class="alert">{{ error() }}</div>
+    }
+
+    <div class="login-form">
+
+      @switch (view()) {
+      @case ('email') {
+      <label class="field">
+        <span class="field-label">Email</span>
+        <input
+          type="email"
+          [(ngModel)]="emailField"
+          autocomplete="username"
+          placeholder="you@example.com"
+          (keydown.enter)="continueWithEmail()"
+        />
+      </label>
+      <div class="actions">
+        <button class="btn btn-primary" (click)="continueWithEmail()"
+                [disabled]="busy() || !emailField.trim()">
+          {{ busy() ? '…' : 'Продолжить' }}
+        </button>
+        <button class="btn btn-ghost" type="button" (click)="goRegister()">
+          Регистрация
+        </button>
+      </div>
+      }
+
+      @case ('password') {
+      @if (selected(); as s) {
+      <div class="picked">
+        <div class="picked-avatar">{{ s.displayName.charAt(0).toUpperCase() }}</div>
+        <div class="picked-body">
+          <div class="picked-name">{{ s.displayName }}</div>
+          <div class="picked-email">{{ submittedEmail() }}</div>
+        </div>
+      </div>
+      }
+      <label class="field">
+        <span class="field-label">Пароль</span>
+        <input
+          type="password"
+          [(ngModel)]="passwordField"
+          autocomplete="current-password"
+          (keydown.enter)="submitLogin()"
+        />
+      </label>
+      <div class="actions">
+        <button class="btn btn-primary" (click)="submitLogin()"
+                [disabled]="busy() || !passwordField">
+          {{ busy() ? '…' : 'Войти' }}
+        </button>
+        <button class="btn btn-ghost" type="button" (click)="backToEmail()">
+          Назад
+        </button>
+      </div>
+      }
+
+      @case ('empty') {
+      <div class="picked">
+        <div class="picked-avatar">?</div>
+        <div class="picked-body">
+          <div class="picked-name">{{ submittedEmail() }}</div>
+          <div class="picked-email">аккаунт не найден</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" (click)="goRegister()">
+          Зарегистрироваться
+        </button>
+        <button class="btn btn-ghost" type="button" (click)="backToEmail()">
+          Назад
+        </button>
+      </div>
+      }
+
+      @case ('register') {
+      <label class="field">
+        <span class="field-label">Email</span>
+        <input type="email" [(ngModel)]="emailField" autocomplete="username"
+               placeholder="you@example.com" />
+      </label>
+      <label class="field">
+        <span class="field-label">Отображаемое имя</span>
+        <input type="text" [(ngModel)]="displayNameField"
+               placeholder="Иван Петров" />
+      </label>
+      <label class="field">
+        <span class="field-label">Пароль</span>
+        <input type="password" [(ngModel)]="passwordField"
+               autocomplete="new-password" />
+      </label>
+      <div class="actions">
+        <button class="btn btn-primary" (click)="submitRegister()"
+                [disabled]="busy() || !canRegister()">
+          {{ busy() ? '…' : 'Создать аккаунт' }}
+        </button>
+        <button class="btn btn-ghost" type="button" (click)="backToEmail()">
+          Назад
+        </button>
+      </div>
+      }
+      }
+    </div>
+  </div>
+</div>

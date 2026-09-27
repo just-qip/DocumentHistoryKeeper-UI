@@ -1,40 +1,46 @@
 @if (project(); as p) {
 <nav class="crumbs">
-  <a routerLink="/projects">Проекты</a> / <span>{{ p.name }}</span>
+  <a routerLink="/projects">Проекты</a>
+  <span class="sep">/</span>
+  <span class="crumb-current">{{ p.name }}</span>
 </nav>
 <header class="page-head">
   <div>
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>Проект</span>
+    </div>
     <h1>{{ p.name }}</h1>
     @if (p.description) {
     <p class="desc">{{ p.description }}</p>
     }
   </div>
-  <button class="primary" (click)="showUpload.set(!showUpload())">
+  <button class="btn btn-primary" (click)="showUpload.set(!showUpload())">
     {{ showUpload() ? 'Отмена' : '+ Загрузить документ' }}
   </button>
 </header>
 }
 
 @if (error()) {
-<div class="error">{{ error() }}</div>
+<div class="alert">{{ error() }}</div>
 }
 
 @if (showUpload()) {
 <form class="card upload-form" (ngSubmit)="upload()">
-  <div class="field">
-    <label for="titleInput">Заголовок</label>
-    <input id="titleInput" name="title" [(ngModel)]="newTitle"
+  <label class="field">
+    <span class="field-label">Заголовок</span>
+    <input name="title" [(ngModel)]="newTitle"
            placeholder="Например: Договор аренды" />
-  </div>
+  </label>
 
-  <div class="field">
-    <label for="docKindInput">Тип</label>
-    <input id="docKindInput" name="docKind" [(ngModel)]="newDocKind"
+  <label class="field">
+    <span class="field-label">Тип</span>
+    <input name="docKind" [(ngModel)]="newDocKind"
            placeholder="CONTRACT, INVOICE, …" />
-  </div>
+  </label>
 
   <div class="field">
-    <label>Файл</label>
+    <span class="field-label">Файл</span>
     <div class="file-picker">
       <input
         #fileInput
@@ -44,7 +50,7 @@
         (change)="onFile($event)"
       />
       <label for="fileInput" class="file-picker-button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
              stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="17 8 12 3 7 8"/>
@@ -66,7 +72,7 @@
     </div>
   </div>
 
-  <button type="submit" class="primary"
+  <button type="submit" class="btn btn-primary"
           [disabled]="!newTitle.trim() || !newDocKind.trim() || !file">
     Загрузить
   </button>
@@ -76,38 +82,45 @@
 @if (loading()) {
 <div class="muted">Загрузка…</div>
 } @else if (documents().length === 0) {
-<div class="empty">В проекте пока нет документов.</div>
+<div class="empty">
+  <div class="empty-title">В проекте пока нет документов</div>
+  <div class="empty-hint">Загрузите первый файл, чтобы начать вести историю.</div>
+</div>
 } @else {
-<table class="table">
-  <thead>
-  <tr>
-    <th>Заголовок</th>
-    <th>Тип</th>
-    <th>Создал</th>
-    <th>Изменил</th>
-    <th>Обновлён</th>
-  </tr>
-  </thead>
-  <tbody>
-  @for (d of documents(); track d.id) {
-  <tr>
-    <td>
-      <a [routerLink]="['/projects', projectId, 'documents', d.id]">
-        {{ d.title }}
-      </a>
-    </td>
-    <td>{{ d.docKind }}</td>
-    <td>{{ authorName(d.createdBy) }}</td>
-    <td>
-      @if (d.currentVersionAuthorId) {
-      {{ authorName(d.currentVersionAuthorId) }}
-      } @else {
-      <span class="muted-dash">—</span>
-      }
-    </td>
-    <td>{{ d.updatedAt | date:'short' }}</td>
-  </tr>
-  }
-  </tbody>
-</table>
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+    <tr>
+      <th>Заголовок</th>
+      <th>Тип</th>
+      <th>Создал</th>
+      <th>Изменил</th>
+      <th>Обновлён</th>
+    </tr>
+    </thead>
+    <tbody>
+    @for (d of documents(); track d.id) {
+    <tr>
+      <td>
+        <a class="doc-link" [routerLink]="['/projects', projectId, 'documents', d.id]">
+          {{ d.title }}
+        </a>
+      </td>
+      <td>
+        <span class="kind-badge">{{ d.docKind }}</span>
+      </td>
+      <td>{{ authorName(d.createdBy) }}</td>
+      <td>
+        @if (d.currentVersionAuthorId) {
+        {{ authorName(d.currentVersionAuthorId) }}
+        } @else {
+        <span class="muted-dash">—</span>
+        }
+      </td>
+      <td class="col-date">{{ d.updatedAt | date:'short' }}</td>
+    </tr>
+    }
+    </tbody>
+  </table>
+</div>
 }

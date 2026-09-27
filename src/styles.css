@@ -1,9 +1,210 @@
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; height: 100%; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: #0f172a;
-  background: #f8fafc;
+:root {
+  --bg:           #0e0e10;
+  --surface:      #16161a;
+  --surface-2:    #1c1c20;
+  --surface-3:    #232328;
+  --line:         rgba(255, 255, 255, 0.07);
+  --line-2:       rgba(255, 255, 255, 0.12);
+  --fg:           #ece9e3;
+  --fg-2:         #a8a49c;
+  --fg-3:         #6d6a64;
+  --accent:       #ff5b48;
+  --accent-2:     #ff7060;
+  --accent-soft:  rgba(255, 91, 72, 0.14);
+  --radius:       14px;
+  --radius-sm:    10px;
+  --radius-pill:  999px;
 }
-a { color: #1d4ed8; }
-button { font-family: inherit; }
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto,
+  "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--fg);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--fg);
+  text-decoration: none;
+  transition: color .12s;
+}
+a:hover {
+  color: var(--accent-2);
+}
+
+button {
+  font-family: inherit;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--fg-2);
+  background: var(--surface-2);
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+/* ============================================================
+   Eyebrow — pill-метка над заголовком
+   ============================================================ */
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-pill);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+  margin-bottom: 16px;
+}
+
+.eyebrow-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Кнопки — pill-shaped
+   ============================================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .14s, border-color .14s, color .14s, transform .08s;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #1a0907;
+  font-weight: 600;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-2);
+  color: #1a0907;
+  text-decoration: none;
+}
+.btn-primary:active:not(:disabled) {
+  transform: scale(.98);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--fg);
+  border-color: var(--line-2);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--fg-3);
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.btn-danger-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color .12s;
+}
+.btn-danger-link:hover {
+  color: var(--accent-2);
+}
+
+/* ============================================================
+   Поля ввода
+   ============================================================ */
+
+.field {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.field-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg-2);
+  margin-bottom: 8px;
+}
+
+.field input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 15px;
+  color: var(--fg);
+  background: var(--surface-2);
+  transition: border-color .14s, background .14s, box-shadow .14s;
+}
+.field input::placeholder {
+  color: var(--fg-3);
+}
+.field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface-3);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ============================================================
+   Alert
+   ============================================================ */
+
+.alert {
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(255, 91, 72, 0.25);
+  border-radius: var(--radius-sm);
+  color: #ffb3a8;
+  font-size: 13.5px;
+}

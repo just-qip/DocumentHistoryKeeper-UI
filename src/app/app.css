@@ -5,78 +5,107 @@
 
 .shell {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 240px 1fr;
   min-height: 100vh;
 }
 
-/* ---------- Sidebar ---------- */
+/* ============================================================
+   Sidebar
+   ============================================================ */
 
 .sidebar {
-  background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
-  color: #cbd5e1;
+  background: #0a0a0c;
+  border-right: 1px solid var(--line);
+  color: var(--fg-2);
   display: flex;
   flex-direction: column;
-  padding: 24px 16px 16px;
-  gap: 24px;
+  padding: 24px 14px 18px;
+  gap: 22px;
 }
+
+/* ---------- Brand ---------- */
 
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #f8fafc;
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 0.2px;
-  padding: 0 8px;
+  padding: 4px 10px 0;
 }
 
-.brand-icon {
-  width: 22px;
-  height: 22px;
-  color: #60a5fa;
+.brand-mark {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: var(--accent);
   flex-shrink: 0;
 }
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+.brand-name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  color: var(--fg);
+  text-transform: uppercase;
+}
+
+.brand-sub {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: .16em;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* ---------- Nav ---------- */
 
 .sidebar nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .sidebar nav a {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  color: #cbd5e1;
+  gap: 11px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--fg-2);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 500;
-  transition: background 0.15s, color 0.15s;
+  transition: background .12s, color .12s;
 }
 
 .sidebar nav a svg {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-  opacity: 0.85;
+  opacity: .8;
 }
 
 .sidebar nav a:hover {
-  background: rgba(148, 163, 184, 0.1);
-  color: #f1f5f9;
+  background: var(--surface-2);
+  color: var(--fg);
+  text-decoration: none;
 }
 
 .sidebar nav a.active {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  background: var(--surface-3);
+  color: var(--fg);
 }
 
 .sidebar nav a.active svg {
   opacity: 1;
+  color: var(--accent);
 }
 
 /* ---------- Footer ---------- */
@@ -85,8 +114,8 @@
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 0 8px;
+  gap: 12px;
+  padding: 0 4px;
 }
 
 .account-line {
@@ -94,19 +123,19 @@
   align-items: flex-start;
   gap: 10px;
   padding: 10px 12px;
-  background: rgba(148, 163, 184, 0.08);
-  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   font-size: 13px;
 }
 
 .dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+  background: var(--accent);
   flex-shrink: 0;
-  margin-top: 5px;
+  margin-top: 6px;
 }
 
 .account-info {
@@ -118,7 +147,7 @@
 }
 
 .account-name {
-  color: #f8fafc;
+  color: var(--fg);
   font-weight: 500;
   font-size: 13px;
   overflow: hidden;
@@ -127,36 +156,8 @@
 }
 
 .account-email {
-  color: #94a3b8;
-  font-size: 11px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.account-tenant {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tenant-label {
-  color: #64748b;
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.account-tenant code {
-  color: #94a3b8;
-  font-size: 10px;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  color: var(--fg-3);
+  font-size: 11.5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -165,43 +166,61 @@
 .link {
   background: none;
   border: 0;
-  color: #94a3b8;
+  color: var(--fg-3);
   cursor: pointer;
   text-align: left;
-  padding: 0;
+  padding: 0 4px;
   font-size: 12px;
   font-family: inherit;
-  transition: color 0.15s;
+  transition: color .12s;
 }
-
 .link:hover {
-  color: #e2e8f0;
+  color: var(--fg);
 }
 
 .signin {
-  color: #93c5fd;
-  text-decoration: none;
+  color: var(--fg);
   font-size: 13px;
   font-weight: 500;
+  padding: 0 4px;
+  align-self: flex-start;
 }
-
 .signin:hover {
-  text-decoration: underline;
+  color: var(--accent);
 }
 
 .version {
-  color: #475569;
-  font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, monospace;
-  padding-top: 8px;
-  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  color: var(--fg-3);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: .1em;
+  padding: 10px 4px 0;
+  border-top: 1px solid var(--line);
 }
 
-/* ---------- Content ---------- */
+/* ============================================================
+   Content
+   ============================================================ */
 
 .content {
-  padding: 40px 48px;
-  background: #f8fafc;
+  position: relative;
+  padding: 48px 56px;
+  background: var(--bg);
   overflow-x: auto;
   min-width: 0;
+}
+
+/* Мягкое свечение сверху — как на референсе */
+.content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 900px;
+  height: 400px;
+  background: radial-gradient(ellipse at center top,
+  rgba(255, 91, 72, 0.06) 0%,
+  transparent 60%);
+  pointer-events: none;
 }

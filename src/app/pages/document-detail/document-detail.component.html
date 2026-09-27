@@ -1,8 +1,10 @@
 @if (document(); as d) {
 <nav class="crumbs">
-  <a routerLink="/projects">Проекты</a> /
-  <a [routerLink]="['/projects', d.projectId]">проект</a> /
-  <span>{{ d.title }}</span>
+  <a routerLink="/projects">Проекты</a>
+  <span class="sep">/</span>
+  <a [routerLink]="['/projects', d.projectId]">проект</a>
+  <span class="sep">/</span>
+  <span class="crumb-current">{{ d.title }}</span>
 </nav>
 <header class="page-head">
   <h1>{{ d.title }}</h1>
@@ -11,12 +13,12 @@
 }
 
 @if (error()) {
-<div class="error">{{ error() }}</div>
+<div class="alert">{{ error() }}</div>
 }
 
 <div class="tabs">
   <button [class.active]="tab() === 'versions'" (click)="tab.set('versions')">
-    Версии ({{ versions().length }})
+    Версии · {{ versions().length }}
   </button>
   <button [class.active]="tab() === 'timeline'" (click)="tab.set('timeline')">
     Хронология
@@ -27,7 +29,7 @@
 <div class="card">
   <form class="upload-form" (ngSubmit)="upload()">
     <div class="field">
-      <label>Файл</label>
+      <span class="field-label">Файл</span>
       <div class="file-picker">
         <input
           #fileInput
@@ -37,7 +39,7 @@
           (change)="onFile($event)"
         />
         <label for="fileInput" class="file-picker-button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="17 8 12 3 7 8"/>
@@ -51,9 +53,7 @@
           <span class="file-name">{{ file.name }}</span>
           <span class="file-size">{{ humanSize(file.size) }}</span>
           <button type="button" class="file-clear" (click)="clearFile()"
-                  aria-label="Убрать файл">
-            ✕
-          </button>
+                  aria-label="Убрать файл">✕</button>
         </div>
         } @else {
         <span class="file-picker-hint">Файл не выбран</span>
@@ -61,15 +61,11 @@
       </div>
     </div>
 
-    <div class="field">
-      <label for="commentInput">Комментарий</label>
-      <input
-        id="commentInput"
-        name="comment"
-        [(ngModel)]="comment"
-        placeholder="Правки юриста, исправление опечатки…"
-      />
-    </div>
+    <label class="field">
+      <span class="field-label">Комментарий</span>
+      <input name="comment" [(ngModel)]="comment"
+             placeholder="Правки юриста, исправление опечатки…" />
+    </label>
 
     <button type="submit" [disabled]="!file">Загрузить версию</button>
   </form>
@@ -95,7 +91,7 @@
       </td>
       <td>{{ humanSize(v.sizeBytes) }}</td>
       <td>{{ authorName(v.authorId) }}</td>
-      <td>{{ v.createdAt | date:'short' }}</td>
+      <td class="col-date">{{ v.createdAt | date:'short' }}</td>
       <td class="actions">
         <button class="ghost" (click)="openPreview(v)">Предпросмотр</button>
         <button class="ghost" (click)="download(v)">Скачать</button>
@@ -138,7 +134,7 @@
       <pre>{{ rest | json }}</pre>
       }
 
-      <div class="hash">hash: <code>{{ e.eventHash }}</code></div>
+      <div class="hash">hash · <code>{{ e.eventHash }}</code></div>
     </li>
     }
   </ol>
@@ -172,7 +168,7 @@
       @if (previewLoading()) {
       <div class="preview-status">Загрузка…</div>
       } @else if (previewError()) {
-      <div class="error">{{ previewError() }}</div>
+      <div class="alert">{{ previewError() }}</div>
       } @else {
       @switch (previewMode()) {
       @case ('text') {
@@ -202,7 +198,7 @@
       <div class="preview-unknown">
         <div class="preview-unknown-icon">📦</div>
         <p>Предпросмотр для этого формата недоступен.</p>
-        <button class="primary" (click)="download(previewVersion()!)">
+        <button class="ghost" (click)="download(previewVersion()!)">
           Скачать файл
         </button>
       </div>
