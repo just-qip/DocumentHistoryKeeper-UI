@@ -14,6 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { DocumentApiService } from '../../core/api/document-api.service';
 import { AccountDirectoryService } from '../../core/account-directory.service';
+import { AppTitleService } from '../../core/app-title.service';
 import { Document, TimelineEvent, VersionMeta } from '../../core/models';
 
 /** Режим отображения предпросмотра, вычисляется по MIME. */
@@ -33,6 +34,7 @@ export class DocumentDetailComponent {
   private readonly directory = inject(AccountDirectoryService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly title = inject(AppTitleService);
 
   readonly documentId = this.route.snapshot.paramMap.get('documentId')!;
   readonly document = signal<Document | null>(null);
@@ -56,6 +58,9 @@ export class DocumentDetailComponent {
   file: File | null = null;
 
   constructor() {
+    this.title.set('Документ');
+
+    // Блокируем скролл body, пока модалка открыта.
     effect((onCleanup) => {
       if (this.previewOpen()) {
         const prev = document.body.style.overflow;
@@ -66,10 +71,14 @@ export class DocumentDetailComponent {
       }
     });
 
+    // Отзываем blob-URL при разрушении компонента, чтобы не текла память.
     this.destroyRef.onDestroy(() => this.revokePreviewUrl());
 
     this.api.get(this.documentId).subscribe({
-      next: (d) => this.document.set(d),
+      next: (d) => {
+        this.document.set(d);
+        this.title.set(`${d.title} — документ`);
+      },
       error: (err) => this.error.set(err?.error?.message ?? 'Документ не найден'),
     });
     this.reloadVersions();
@@ -77,11 +86,13 @@ export class DocumentDetailComponent {
     void this.directory.ensureLoaded();
   }
 
+  /** Escape закрывает модалку. */
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.previewOpen()) this.closePreview();
   }
 
+  /** Останавливает всплытие клика, чтобы клик по карточке модалки не закрывал её. */
   stopPropagation(e: Event): void {
     e.stopPropagation();
   }
@@ -117,6 +128,10 @@ export class DocumentDetailComponent {
     this.file = input.files?.[0] ?? null;
   }
 
+  /**
+   * Очищает выбранный файл и сбрасывает значение нативного input,
+   * чтобы повторный выбор того же файла срабатывал.
+   */
   clearFile(): void {
     this.file = null;
     const input = this.fileInput()?.nativeElement;

@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProjectApiService } from '../../core/api/project-api.service';
 import { AccountDirectoryService } from '../../core/account-directory.service';
+import { AppTitleService } from '../../core/app-title.service';
 import { Document, Project } from '../../core/models';
 
 @Component({
@@ -20,6 +21,7 @@ export class ProjectDetailComponent {
   private readonly api = inject(ProjectApiService);
   private readonly directory = inject(AccountDirectoryService);
   private readonly route = inject(ActivatedRoute);
+  private readonly title = inject(AppTitleService);
 
   readonly projectId = this.route.snapshot.paramMap.get('projectId')!;
   readonly project = signal<Project | null>(null);
@@ -33,8 +35,13 @@ export class ProjectDetailComponent {
   file: File | null = null;
 
   constructor() {
+    this.title.set('Проект');
+
     this.api.get(this.projectId).subscribe({
-      next: (p) => this.project.set(p),
+      next: (p) => {
+        this.project.set(p);
+        this.title.set(`${p.name} — проект`);
+      },
       error: (err) => this.error.set(err?.error?.message ?? 'Проект не найден'),
     });
     this.reload();
