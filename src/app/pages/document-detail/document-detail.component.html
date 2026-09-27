@@ -70,42 +70,46 @@
     <button type="submit" [disabled]="!file">Загрузить версию</button>
   </form>
 
-  <table class="table">
-    <thead>
-    <tr>
-      <th>#</th>
-      <th>Файл</th>
-      <th>Размер</th>
-      <th>Автор</th>
-      <th>Дата</th>
-      <th></th>
-    </tr>
-    </thead>
-    <tbody>
-    @for (v of versions(); track v.id) {
-    <tr>
-      <td><strong>v{{ v.versionNumber }}</strong></td>
-      <td>
-        {{ v.originalName }}
-        <div class="mime">{{ v.mimeType }}</div>
-      </td>
-      <td>{{ humanSize(v.sizeBytes) }}</td>
-      <td>{{ authorName(v.authorId) }}</td>
-      <td class="col-date">{{ v.createdAt | date:'short' }}</td>
-      <td class="actions">
-        <button class="ghost" (click)="openPreview(v)">Предпросмотр</button>
-        <button class="ghost" (click)="download(v)">Скачать</button>
-      </td>
-    </tr>
-    @if (v.comment) {
-    <tr class="comment-row">
-      <td></td>
-      <td colspan="5">💬 {{ v.comment }}</td>
-    </tr>
-    }
-    }
-    </tbody>
-  </table>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+      <tr>
+        <th>#</th>
+        <th>Файл</th>
+        <th>Размер</th>
+        <th>Автор</th>
+        <th>Дата</th>
+        <th></th>
+      </tr>
+      </thead>
+      <tbody>
+      @for (v of versions(); track v.id) {
+      <tr>
+        <td><strong>v{{ v.versionNumber }}</strong></td>
+        <td>
+          {{ v.originalName }}
+          <div class="mime">{{ v.mimeType }}</div>
+        </td>
+        <td>{{ humanSize(v.sizeBytes) }}</td>
+        <td>{{ authorName(v.authorId) }}</td>
+        <td class="col-date">{{ v.createdAt | date:'short' }}</td>
+        <td>
+          <div class="actions">
+            <button class="ghost" (click)="openPreview(v)">Предпросмотр</button>
+            <button class="ghost" (click)="download(v)">Скачать</button>
+          </div>
+        </td>
+      </tr>
+      @if (v.comment) {
+      <tr class="comment-row">
+        <td></td>
+        <td colspan="5">💬 {{ v.comment }}</td>
+      </tr>
+      }
+      }
+      </tbody>
+    </table>
+  </div>
 </div>
 }
 

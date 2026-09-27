@@ -6,7 +6,7 @@
 </header>
 
 @if (error()) {
-<div class="error">{{ error() }}</div>
+<div class="alert">{{ error() }}</div>
 }
 
 <div class="layout">
@@ -33,7 +33,7 @@
         <h2>{{ p.name }}</h2>
         <div class="muted">{{ accesses().length }} записей доступа</div>
       </div>
-      <button class="primary" (click)="showGrant.set(!showGrant())">
+      <button class="btn btn-primary" (click)="showGrant.set(!showGrant())">
         {{ showGrant() ? 'Отмена' : '+ Выдать доступ' }}
       </button>
     </header>
@@ -41,7 +41,7 @@
     @if (showGrant()) {
     <form class="grant-form" (ngSubmit)="grant()">
       <div class="field">
-        <label for="accSel">Аккаунт</label>
+        <label class="field-label" for="accSel">Аккаунт</label>
         <select id="accSel" name="accountId" [(ngModel)]="newAccountId">
           <option value="">— выберите аккаунт —</option>
           @for (a of candidateAccounts(); track a.id) {
@@ -50,62 +50,67 @@
         </select>
       </div>
       <div class="field">
-        <label for="roleSel">Роль</label>
+        <label class="field-label" for="roleSel">Роль</label>
         <select id="roleSel" name="role" [(ngModel)]="newRole">
           <option value="VIEWER">VIEWER — только чтение</option>
           <option value="EDITOR">EDITOR — правка и загрузка версий</option>
           <option value="OWNER">OWNER — полный доступ</option>
         </select>
       </div>
-      <button type="submit" class="primary" [disabled]="!newAccountId">Выдать</button>
+      <button type="submit" class="btn btn-primary" [disabled]="!newAccountId">Выдать</button>
     </form>
     }
 
     @if (loading()) {
     <div class="muted">Загрузка…</div>
     } @else if (accesses().length === 0) {
-    <div class="empty">Никому не выдан доступ. Даже владелец не увидит проект.</div>
+    <div class="empty">
+      Никому не выдан доступ к этому проекту.
+      Нажмите «+ Выдать доступ», чтобы назначить первого участника.
+    </div>
     } @else {
-    <table class="table">
-      <thead>
-      <tr>
-        <th>Аккаунт</th>
-        <th>Роль</th>
-        <th>Выдан</th>
-        <th>Кем</th>
-        <th></th>
-      </tr>
-      </thead>
-      <tbody>
-      @for (a of accesses(); track a.id) {
-      <tr>
-        <td>
-          <div class="author-name">{{ accountName(a.accountId) }}</div>
-          <div class="author-email">{{ accountEmail(a.accountId) }}</div>
-        </td>
-        <td>
-          <select [ngModel]="a.role" (ngModelChange)="changeRole(a, $event)"
-                  [ngModelOptions]="{ standalone: true }">
-            <option value="VIEWER">VIEWER</option>
-            <option value="EDITOR">EDITOR</option>
-            <option value="OWNER">OWNER</option>
-          </select>
-        </td>
-        <td>{{ a.grantedAt | date:'short' }}</td>
-        <td>
-          @if (a.grantedBy) {
-          <span>{{ accountName(a.grantedBy) }}</span>
-          } @else {
-          <span class="muted-dash">—</span>
-          }
-        </td>
-        <td>
-          <button class="link-danger" (click)="revoke(a)">Отозвать</button>
-        </td>
-      </tr>
-      }
-      </tbody>
-    </table>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Аккаунт</th>
+          <th>Роль</th>
+          <th>Выдан</th>
+          <th>Кем</th>
+          <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @for (a of accesses(); track a.id) {
+        <tr>
+          <td>
+            <div class="author-name">{{ accountName(a.accountId) }}</div>
+            <div class="author-email">{{ accountEmail(a.accountId) }}</div>
+          </td>
+          <td>
+            <select [ngModel]="a.role" (ngModelChange)="changeRole(a, $event)"
+                    [ngModelOptions]="{ standalone: true }">
+              <option value="VIEWER">VIEWER</option>
+              <option value="EDITOR">EDITOR</option>
+              <option value="OWNER">OWNER</option>
+            </select>
+          </td>
+          <td class="col-date">{{ a.grantedAt | date:'short' }}</td>
+          <td>
+            @if (a.grantedBy) {
+            <span>{{ accountName(a.grantedBy) }}</span>
+            } @else {
+            <span class="muted-dash">—</span>
+            }
+          </td>
+          <td>
+            <button class="btn-danger-link" (click)="revoke(a)">Отозвать</button>
+          </td>
+        </tr>
+        }
+        </tbody>
+      </table>
+    </div>
     }
     } @else {
     <div class="empty">Выберите проект слева, чтобы управлять доступами.</div>

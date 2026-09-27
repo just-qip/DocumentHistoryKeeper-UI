@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AccountContextService } from './core/account-context.service';
@@ -20,6 +20,9 @@ export class App implements OnInit {
   readonly isAdmin = computed(() => this.ctx.account()?.systemRole === 'ADMIN');
   readonly version = pkg.version;
 
+  /** Открыт ли off-canvas сайдбар (мобильный режим). */
+  readonly menuOpen = signal(false);
+
   async ngOnInit(): Promise<void> {
     if (!this.ctx.isAuthenticated()) return;
     try {
@@ -30,12 +33,21 @@ export class App implements OnInit {
     }
   }
 
+  toggleMenu(): void {
+    this.menuOpen.update((v) => !v);
+  }
+
+  closeMenu(): void {
+    this.menuOpen.set(false);
+  }
+
   async logout(): Promise<void> {
     try {
       await firstValueFrom(this.auth.logout());
     } catch {
       // не важно
     }
+    this.closeMenu();
     this.ctx.clear();
     await this.router.navigate(['/login']);
   }

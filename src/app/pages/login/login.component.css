@@ -2,49 +2,40 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 32px 20px 80px;
+  padding: 32px 20px 60px;
 }
 
-.login-inner {
+.login-card {
   width: 100%;
   max-width: 440px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 32px 32px 28px;
 }
 
 /* ---------- Шапка ---------- */
 
 .login-head {
-  margin-bottom: 32px;
-  text-align: center;
-}
-
-.login-head .eyebrow {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .login-head h1 {
-  margin: 0 0 14px;
-  font-size: 56px;
-  font-weight: 500;
-  letter-spacing: -.035em;
-  line-height: .98;
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -.01em;
   color: var(--fg);
 }
 
-.lede {
+.hint {
   margin: 0;
   color: var(--fg-2);
-  font-size: 15px;
+  font-size: 13.5px;
   line-height: 1.5;
 }
 
-/* ---------- Форма ---------- */
-
-.login-form {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 28px 28px 24px;
-}
+/* ---------- Действия ---------- */
 
 .actions {
   display: flex;
@@ -63,15 +54,15 @@
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .picked-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--blue-soft);
+  color: var(--blue);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -80,16 +71,21 @@
   flex-shrink: 0;
 }
 
+.picked-avatar-muted {
+  background: var(--surface);
+  color: var(--fg-3);
+  border: 1px dashed var(--line-2);
+}
+
 .picked-body {
   min-width: 0;
   flex: 1;
 }
 
 .picked-name {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--fg);
-  font-size: 14.5px;
-  letter-spacing: -.005em;
+  font-size: 14px;
 }
 
 .picked-email {
@@ -99,4 +95,27 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+
+@media (max-width: 600px) {
+  .login-page {
+    padding: 20px 12px 40px;
+  }
+  .login-card {
+    padding: 24px 20px 22px;
+    border-radius: var(--radius);
+  }
+  .login-head h1 {
+    font-size: 20px;
+  }
+  .actions {
+    flex-direction: column-reverse;
+  }
+  .actions .btn {
+    width: 100%;
+  }
 }
