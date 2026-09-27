@@ -50,7 +50,11 @@
     @case ('password') {
     @if (selected(); as s) {
     <div class="picked">
-      <div class="picked-avatar">{{ s.displayName.charAt(0).toUpperCase() }}</div>
+      @if (avatarSrc(s); as src) {
+      <img class="picked-avatar-img" [src]="src" [alt]="s.displayName" />
+      } @else {
+      <div class="picked-avatar">{{ initial(s) }}</div>
+      }
       <div class="picked-body">
         <div class="picked-name">{{ s.displayName }}</div>
         <div class="picked-email">{{ submittedEmail() }}</div>

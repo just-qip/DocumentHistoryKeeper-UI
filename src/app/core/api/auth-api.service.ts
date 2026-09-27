@@ -7,6 +7,8 @@ import { Account } from '../models';
 export interface AccountChoice {
   accountId: string;
   displayName: string;
+  /** Путь к публичному аватару относительно apiBaseUrl. null = аватара нет. */
+  avatarUrl: string | null;
 }
 
 export interface RegisterRequest {

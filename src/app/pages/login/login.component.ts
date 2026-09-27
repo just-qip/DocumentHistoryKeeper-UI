@@ -6,6 +6,7 @@ import { AccountChoice, AuthApiService } from '../../core/api/auth-api.service';
 import { AccountContextService } from '../../core/account-context.service';
 import { AccountDirectoryService } from '../../core/account-directory.service';
 import { SrpService } from '../../core/srp.service';
+import { environment } from '../../../environments/environment';
 
 /** Экран, который показывается пользователю. */
 type View = 'email' | 'password' | 'empty' | 'register';
@@ -33,6 +34,25 @@ export class LoginComponent {
   emailField = '';
   passwordField = '';
   displayNameField = '';
+
+  /**
+   * @param choice выбранный аккаунт
+   * @returns полный URL к аватару или {@code null}
+   */
+  avatarSrc(choice: AccountChoice): string | null {
+    if (!choice.avatarUrl) return null;
+    // avatarUrl уже включает /auth/avatar/... — приклеиваем к apiBaseUrl
+    return `${environment.apiBaseUrl}${choice.avatarUrl}`;
+  }
+
+  /**
+   * @param choice выбранный аккаунт
+   * @returns первая буква displayName в верхнем регистре
+   */
+  initial(choice: AccountChoice): string {
+    const n = choice.displayName?.trim();
+    return n ? n.charAt(0).toUpperCase() : '?';
+  }
 
   /** @returns true, если все поля для регистрации заполнены */
   canRegister(): boolean {
@@ -77,7 +97,7 @@ export class LoginComponent {
     this.view.set('register');
   }
 
-  /** Шаг 3: SRP-логин. */
+  /** Шаг 3: SRP-логин для найденного аккаунта. */
   async submitLogin(): Promise<void> {
     const email = this.submittedEmail();
     const password = this.passwordField;

@@ -1,0 +1,138 @@
+@if (account(); as a) {
+
+<header class="page-head">
+  <h1>Профиль</h1>
+  <p class="subtitle">Управление учётной записью</p>
+</header>
+
+@if (error()) {
+<div class="alert">{{ error() }}</div>
+}
+@if (success()) {
+<div class="flash">{{ success() }}</div>
+}
+
+<div class="grid">
+
+  <!-- ============================================================
+       Аватар
+       ============================================================ -->
+  <section class="card avatar-card">
+    <h2>Аватар</h2>
+
+    <div class="avatar-preview">
+      @if (avatarPreview) {
+      <img class="avatar-img" [src]="avatarPreview" alt="preview" />
+      } @else if (avatarUrl()) {
+      <img class="avatar-img" [src]="avatarUrl()!" [alt]="a.displayName" />
+      } @else {
+      <div class="avatar-fallback">{{ initial() }}</div>
+      }
+    </div>
+
+    <div class="avatar-actions">
+      <input
+        #avatarInput
+        id="avatarInput"
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        class="file-input-hidden"
+        (change)="onAvatarSelected($event)"
+      />
+      <label for="avatarInput" class="btn btn-ghost">Выбрать файл</label>
+
+      @if (avatarFile) {
+      <button class="btn btn-primary" (click)="uploadAvatar()" [disabled]="saving()">
+        {{ saving() ? '…' : 'Загрузить' }}
+      </button>
+      <button class="btn btn-ghost" (click)="cancelAvatarSelection()" [disabled]="saving()">
+        Отмена
+      </button>
+      } @else if (a.avatarUpdatedAt) {
+      <button class="btn btn-ghost danger" (click)="removeAvatar()" [disabled]="saving()">
+        Удалить
+      </button>
+      }
+    </div>
+
+    <p class="hint">PNG, JPEG, WebP или GIF · не больше 2 МБ</p>
+  </section>
+
+  <!-- ============================================================
+       Информация
+       ============================================================ -->
+  <section class="card">
+    <h2>Информация</h2>
+
+    <label class="field">
+      <span class="field-label">Email</span>
+      <input type="email" [value]="a.email" disabled />
+    </label>
+
+    <label class="field">
+      <span class="field-label">Отображаемое имя</span>
+      <input
+        type="text"
+        [(ngModel)]="displayName"
+        maxlength="255"
+        placeholder="Иван Петров"
+      />
+    </label>
+
+    <div class="row">
+      <button
+        class="btn btn-primary"
+        (click)="saveInfo()"
+        [disabled]="saving() || !displayName.trim() || displayName.trim() === a.displayName"
+      >
+        {{ saving() ? '…' : 'Сохранить' }}
+      </button>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Пароль
+       ============================================================ -->
+  <section class="card full">
+    <h2>Смена пароля</h2>
+    <p class="hint">
+      Пароль не покидает браузер. После смены все сессии будут отозваны — потребуется войти заново.
+    </p>
+
+    <div class="password-grid">
+      <label class="field">
+        <span class="field-label">Текущий пароль</span>
+        <input type="password" [(ngModel)]="oldPassword" autocomplete="current-password" />
+      </label>
+
+      <label class="field">
+        <span class="field-label">Новый пароль (мин. 8 символов)</span>
+        <input type="password" [(ngModel)]="newPassword" autocomplete="new-password" />
+      </label>
+
+      <label class="field">
+        <span class="field-label">Повтор нового</span>
+        <input type="password" [(ngModel)]="newPassword2" autocomplete="new-password" />
+      </label>
+    </div>
+
+    @if (newPassword && newPassword2 && newPassword !== newPassword2) {
+    <div class="inline-warn">Пароли не совпадают</div>
+    }
+    @if (newPassword && newPassword.length < 8) {
+    <div class="inline-warn">Минимум 8 символов</div>
+    }
+
+    <div class="row">
+      <button
+        class="btn btn-primary"
+        (click)="changePassword()"
+        [disabled]="changingPassword() || !canChangePassword()"
+      >
+        {{ changingPassword() ? '…' : 'Сменить пароль' }}
+      </button>
+    </div>
+  </section>
+
+</div>
+}

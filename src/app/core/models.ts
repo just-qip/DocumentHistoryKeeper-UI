@@ -7,6 +7,7 @@ export interface Account {
   displayName: string;
   status: string;
   systemRole: SystemRole;
+  avatarUpdatedAt: string | null;
   createdAt: string;
 }
 
