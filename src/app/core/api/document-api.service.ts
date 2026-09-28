@@ -2,7 +2,14 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Document, TimelinePage, VersionMeta } from '../models';
+import {
+  AccessAction,
+  AccessLogPage,
+  AccessLogStats,
+  Document,
+  TimelinePage,
+  VersionMeta,
+} from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class DocumentApiService {
@@ -34,14 +41,20 @@ export class DocumentApiService {
     return this.http.post<VersionMeta>(`${this.base}/${documentId}/versions`, form);
   }
 
-  downloadUrl(documentId: string, versionNumber: number): string {
-    return `${this.base}/${documentId}/versions/${versionNumber}/content`;
-  }
-
-  /** Скачивает файл через HTTP-клиент, чтобы прошёл интерцептор с X-Account-Id. */
-  download(documentId: string, versionNumber: number): Observable<Blob> {
+  /**
+   * @param documentId документ
+   * @param versionNumber версия
+   * @param mode preview | download (влияет на аудит и Content-Disposition)
+   */
+  download(
+    documentId: string,
+    versionNumber: number,
+    mode: 'preview' | 'download' = 'download',
+  ): Observable<Blob> {
+    const params = new HttpParams().set('mode', mode);
     return this.http.get(`${this.base}/${documentId}/versions/${versionNumber}/content`, {
       responseType: 'blob',
+      params,
     });
   }
 
@@ -49,5 +62,36 @@ export class DocumentApiService {
     let params = new HttpParams().set('limit', limit);
     if (before) params = params.set('before', before);
     return this.http.get<TimelinePage>(`${this.base}/${documentId}/timeline`, { params });
+  }
+
+  /**
+   * @param documentId     документ
+   * @param filters        action / accountId / versionId / withoutVersion / before / limit
+   */
+  audit(
+    documentId: string,
+    filters: {
+      action?: AccessAction | null;
+      accountId?: string | null;
+      versionId?: string | null;
+      withoutVersion?: boolean;
+      before?: string | null;
+      limit?: number;
+    } = {},
+  ): Observable<AccessLogPage> {
+    let params = new HttpParams().set('limit', filters.limit ?? 50);
+    if (filters.action) params = params.set('action', filters.action);
+    if (filters.accountId) params = params.set('accountId', filters.accountId);
+    if (filters.withoutVersion) {
+      params = params.set('withoutVersion', 'true');
+    } else if (filters.versionId) {
+      params = params.set('versionId', filters.versionId);
+    }
+    if (filters.before) params = params.set('before', filters.before);
+    return this.http.get<AccessLogPage>(`${this.base}/${documentId}/audit`, { params });
+  }
+
+  auditStats(documentId: string): Observable<AccessLogStats> {
+    return this.http.get<AccessLogStats>(`${this.base}/${documentId}/audit/stats`);
   }
 }

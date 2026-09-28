@@ -17,12 +17,17 @@
 }
 
 <div class="tabs">
-  <button [class.active]="tab() === 'versions'" (click)="tab.set('versions')">
+  <button [class.active]="tab() === 'versions'" (click)="onTabChange('versions')">
     Версии · {{ versions().length }}
   </button>
-  <button [class.active]="tab() === 'timeline'" (click)="tab.set('timeline')">
+  <button [class.active]="tab() === 'timeline'" (click)="onTabChange('timeline')">
     Хронология
   </button>
+  @if (canViewAudit()) {
+  <button [class.active]="tab() === 'audit'" (click)="onTabChange('audit')">
+    Журнал
+  </button>
+  }
 </div>
 
 @if (tab() === 'versions') {
@@ -143,7 +148,148 @@
     }
   </ol>
   @if (nextCursor()) {
-  <button class="ghost" (click)="loadMore()">Загрузить ещё</button>
+  <button class="ghost" (click)="loadMoreTimeline()">Загрузить ещё</button>
+  }
+  }
+</div>
+}
+
+@if (tab() === 'audit' && canViewAudit()) {
+<div class="card audit">
+
+  @if (auditStats(); as s) {
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-value">{{ s.totalViews }}</div>
+      <div class="stat-label">Просмотров</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">{{ s.totalPreviews }}</div>
+      <div class="stat-label">Предпросмотров</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">{{ s.totalDownloads }}</div>
+      <div class="stat-label">Скачиваний</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">{{ s.uniqueViewers }}</div>
+      <div class="stat-label">Уникальных</div>
+    </div>
+  </div>
+
+  @if (s.perVersion.length > 0) {
+  <div class="per-version">
+    <h3>По версиям</h3>
+    <table class="table">
+      <thead>
+      <tr>
+        <th>Версия</th>
+        <th>Просмотры</th>
+        <th>Предпросмотры</th>
+        <th>Скачивания</th>
+        <th>Последний</th>
+      </tr>
+      </thead>
+      <tbody>
+      @for (v of s.perVersion; track v.versionId) {
+      <tr>
+        <td>
+          @if (v.versionNumber == null) {
+          <span class="version-doc">Документ</span>
+          <div class="version-hint">без привязки к версии</div>
+          } @else {
+          <strong>v{{ v.versionNumber }}</strong>
+          }
+        </td>
+        <td>{{ v.views }}</td>
+        <td>{{ v.previews }}</td>
+        <td>{{ v.downloads }}</td>
+        <td class="col-date">{{ v.lastAccessAt | date:'short' }}</td>
+      </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+  }
+  }
+
+  <div class="filters">
+    <label class="field">
+      <span class="field-label">Действие</span>
+      <select [(ngModel)]="auditActionFilter" (ngModelChange)="applyAuditFilters()">
+        <option value="">Все</option>
+        <option value="VIEW">Просмотр</option>
+        <option value="PREVIEW">Предпросмотр</option>
+        <option value="DOWNLOAD">Скачивание</option>
+      </select>
+    </label>
+
+    <label class="field">
+      <span class="field-label">Версия</span>
+      <select [(ngModel)]="auditVersionFilter" (ngModelChange)="applyAuditFilters()">
+        <option value="">Все</option>
+        <option [value]="VERSION_NONE">Без версии</option>
+        @for (v of versions(); track v.id) {
+        <option [value]="v.id">v{{ v.versionNumber }}</option>
+        }
+      </select>
+    </label>
+
+    @if (auditActionFilter || auditVersionFilter) {
+    <button class="btn btn-ghost" (click)="clearAuditFilters()">Сбросить</button>
+    }
+  </div>
+
+  @if (auditLoading() && auditEntries().length === 0) {
+  <div class="muted">Загрузка…</div>
+  } @else if (auditEntries().length === 0) {
+  <div class="muted">Записей нет.</div>
+  } @else {
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+      <tr>
+        <th>Время</th>
+        <th>Пользователь</th>
+        <th>Действие</th>
+        <th>Версия</th>
+        <th>Устройство</th>
+        <th>IP</th>
+      </tr>
+      </thead>
+      <tbody>
+      @for (e of auditEntries(); track e.id) {
+      <tr>
+        <td class="col-date">{{ e.at | date:'medium' }}</td>
+        <td>
+          <div class="user-name">{{ e.accountName }}</div>
+          <div class="user-email">{{ e.accountEmail }}</div>
+        </td>
+        <td>
+                <span class="action-badge" [attr.data-action]="e.action">
+                  {{ actionLabel(e.action) }}
+                </span>
+        </td>
+        <td>
+          @if (e.versionNumber != null) {
+          <strong>v{{ e.versionNumber }}</strong>
+          } @else {
+          <span class="muted-dash">—</span>
+          }
+        </td>
+        <td>
+          <span class="device-icon">{{ deviceIcon(e.deviceType) }}</span>
+          <span class="client">{{ clientLabel(e) }}</span>
+        </td>
+        <td class="col-ip">{{ e.ipAddress || '—' }}</td>
+      </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+
+  @if (auditNextCursor()) {
+  <button class="ghost" (click)="loadMoreAudit()">Загрузить ещё</button>
   }
   }
 </div>

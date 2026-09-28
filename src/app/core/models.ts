@@ -1,5 +1,6 @@
 export type SystemRole = 'USER' | 'ADMIN';
 export type ProjectRole = 'VIEWER' | 'EDITOR' | 'OWNER';
+export type AccessAction = 'VIEW' | 'PREVIEW' | 'DOWNLOAD';
 
 export interface Account {
   id: string;
@@ -18,7 +19,6 @@ export interface Project {
   createdAt: string;
   createdBy: string;
   archivedAt: string | null;
-  /** Роль текущего пользователя: ADMIN / OWNER / EDITOR / VIEWER или null. */
   myRole: string | null;
 }
 
@@ -71,13 +71,60 @@ export interface ProjectAccess {
   id: string;
   projectId: string;
   accountId: string;
-  /** Отображаемое имя аккаунта (приходит с сервера). */
   accountName: string;
-  /** Email аккаунта. */
   accountEmail: string;
-  /** Публичный URL аватара (относительно apiBaseUrl) или null. */
   accountAvatarUrl: string | null;
   role: ProjectRole;
   grantedAt: string;
   grantedBy: string | null;
+}
+
+export interface AccessLogEntry {
+  id: number;
+  at: string;
+  action: AccessAction;
+  versionId: string | null;
+  versionNumber: number | null;
+  accountId: string;
+  accountName: string;
+  accountEmail: string;
+  ipAddress: string | null;
+  deviceType: string | null;
+  osName: string | null;
+  browserName: string | null;
+  userAgent: string | null;
+}
+
+export interface AccessLogPage {
+  documentId: string;
+  entries: AccessLogEntry[];
+  nextCursor: string | null;
+}
+
+export interface PerVersionStat {
+  versionId: string | null;
+  versionNumber: number | null;
+  views: number;
+  previews: number;
+  downloads: number;
+  lastAccessAt: string | null;
+}
+
+export interface PerUserStat {
+  accountId: string;
+  accountName: string;
+  views: number;
+  previews: number;
+  downloads: number;
+  lastAccessAt: string | null;
+}
+
+export interface AccessLogStats {
+  documentId: string;
+  totalViews: number;
+  totalPreviews: number;
+  totalDownloads: number;
+  uniqueViewers: number;
+  perVersion: PerVersionStat[];
+  perUser: PerUserStat[];
 }
