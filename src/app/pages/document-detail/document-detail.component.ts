@@ -20,6 +20,7 @@ import {
   AccessAction,
   AccessLogEntry,
   AccessLogStats,
+  DeniedReason,
   Document,
   TimelineEvent,
   VersionMeta,
@@ -28,7 +29,6 @@ import {
 type PreviewMode = 'text' | 'image' | 'pdf' | 'video' | 'audio' | 'unknown';
 type Tab = 'versions' | 'timeline' | 'audit';
 
-/** Специальное значение фильтра версии: «без версии». */
 const VERSION_FILTER_NONE = '__none__';
 
 @Component({
@@ -61,14 +61,25 @@ export class DocumentDetailComponent {
   /* ---------- Аудит ---------- */
 
   readonly auditEntries = signal<AccessLogEntry[]>([]);
-  readonly auditNextCursor = signal<string | null>(null);
   readonly auditStats = signal<AccessLogStats | null>(null);
   readonly auditLoading = signal(false);
 
-  /** Значение для UI-выпадашки «Версия». */
+  /** Номер страницы (1-based для UI). */
+  readonly auditPage = signal(1);
+  /** Размер страницы. */
+  readonly auditPageSize = signal(50);
+  /** Всего страниц. */
+  readonly auditTotalPages = signal(0);
+  /** Всего записей. */
+  readonly auditTotalElements = signal(0);
+
+  /** Доступные размеры страницы. */
+  readonly pageSizes = [25, 50, 100, 200];
+
   readonly VERSION_NONE = VERSION_FILTER_NONE;
   auditActionFilter: AccessAction | '' = '';
   auditVersionFilter: string = '';
+  auditDeniedOnly = false;
 
   /* ---------- Модальное окно предпросмотра ---------- */
 
@@ -164,25 +175,27 @@ export class DocumentDetailComponent {
     }
   }
 
-  reloadAudit(before?: string): void {
+  /** Загрузка текущей страницы (или указанной). */
+  reloadAudit(page?: number): void {
+    const target = page ?? this.auditPage();
     this.auditLoading.set(true);
+
     const filter = this.auditVersionFilter;
     this.api
       .audit(this.documentId, {
         action: this.auditActionFilter || null,
         versionId: filter && filter !== VERSION_FILTER_NONE ? filter : null,
         withoutVersion: filter === VERSION_FILTER_NONE,
-        before: before ?? null,
-        limit: 50,
+        deniedOnly: this.auditDeniedOnly,
+        page: target - 1, // API принимает 0-based
+        size: this.auditPageSize(),
       })
       .subscribe({
-        next: (page) => {
-          if (before) {
-            this.auditEntries.update((prev) => [...prev, ...page.entries]);
-          } else {
-            this.auditEntries.set(page.entries);
-          }
-          this.auditNextCursor.set(page.nextCursor);
+        next: (p) => {
+          this.auditEntries.set(p.entries);
+          this.auditPage.set(p.page + 1);
+          this.auditTotalPages.set(p.totalPages);
+          this.auditTotalElements.set(p.totalElements);
           this.auditLoading.set(false);
         },
         error: (err) => {
@@ -199,19 +212,68 @@ export class DocumentDetailComponent {
     });
   }
 
-  loadMoreAudit(): void {
-    const c = this.auditNextCursor();
-    if (c) this.reloadAudit(c);
+  /* ---------- Пагинация ---------- */
+
+  goToPage(n: number): void {
+    const target = Math.min(Math.max(n, 1), Math.max(this.auditTotalPages(), 1));
+    if (target === this.auditPage()) return;
+    this.reloadAudit(target);
   }
 
+  nextPage(): void {
+    this.goToPage(this.auditPage() + 1);
+  }
+  prevPage(): void {
+    this.goToPage(this.auditPage() - 1);
+  }
+  firstPage(): void {
+    this.goToPage(1);
+  }
+  lastPage(): void {
+    this.goToPage(this.auditTotalPages() || 1);
+  }
+
+  changePageSize(size: number): void {
+    this.auditPageSize.set(size);
+    this.reloadAudit(1);
+  }
+
+  /**
+   * Список номеров страниц вокруг текущей для рендера кнопок.
+   * Возвращает до 7 номеров: 1, …, n-1, n, n+1, …, last.
+   */
+  visiblePages(): (number | '...')[] {
+    const total = this.auditTotalPages();
+    if (total <= 1) return [];
+    const cur = this.auditPage();
+    const result: (number | '...')[] = [];
+
+    const push = (n: number | '...') => {
+      if (result[result.length - 1] !== n) result.push(n);
+    };
+
+    push(1);
+    if (cur > 3) push('...');
+    for (let i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) {
+      push(i);
+    }
+    if (cur < total - 2) push('...');
+    if (total > 1) push(total);
+
+    return result;
+  }
+
+  /* ---------- Фильтры ---------- */
+
   applyAuditFilters(): void {
-    this.reloadAudit();
+    this.reloadAudit(1);
   }
 
   clearAuditFilters(): void {
     this.auditActionFilter = '';
     this.auditVersionFilter = '';
-    this.reloadAudit();
+    this.auditDeniedOnly = false;
+    this.reloadAudit(1);
   }
 
   /* ---------- Файл ---------- */
@@ -359,6 +421,19 @@ export class DocumentDetailComponent {
     }
   }
 
+  deniedReasonLabel(r: DeniedReason): string {
+    switch (r) {
+      case 'NO_SESSION':
+        return 'Без сессии';
+      case 'INVALID_SESSION':
+        return 'Невалидный токен';
+      case 'NO_ACCESS':
+        return 'Нет доступа';
+      case 'NOT_FOUND':
+        return 'Не найден';
+    }
+  }
+
   deviceIcon(t: string | null): string {
     switch (t) {
       case 'mobile':
@@ -381,11 +456,11 @@ export class DocumentDetailComponent {
     return parts.join(' · ') || '—';
   }
 
-  /**
-   * @param versionNumber номер версии (null для записей без привязки к версии)
-   * @returns читаемая метка
-   */
   versionLabel(versionNumber: number | null): string {
     return versionNumber == null ? 'Документ' : `v${versionNumber}`;
+  }
+
+  isDenied(e: AccessLogEntry): boolean {
+    return e.deniedReason != null;
   }
 }

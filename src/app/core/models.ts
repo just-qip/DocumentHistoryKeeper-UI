@@ -1,6 +1,7 @@
 export type SystemRole = 'USER' | 'ADMIN';
 export type ProjectRole = 'VIEWER' | 'EDITOR' | 'OWNER';
 export type AccessAction = 'VIEW' | 'PREVIEW' | 'DOWNLOAD';
+export type DeniedReason = 'NO_SESSION' | 'INVALID_SESSION' | 'NO_ACCESS' | 'NOT_FOUND';
 
 export interface Account {
   id: string;
@@ -85,20 +86,25 @@ export interface AccessLogEntry {
   action: AccessAction;
   versionId: string | null;
   versionNumber: number | null;
-  accountId: string;
-  accountName: string;
-  accountEmail: string;
+  attemptedVersionNumber: number | null;
+  accountId: string | null;
+  accountName: string | null;
+  accountEmail: string | null;
   ipAddress: string | null;
   deviceType: string | null;
   osName: string | null;
   browserName: string | null;
   userAgent: string | null;
+  deniedReason: DeniedReason | null;
 }
 
 export interface AccessLogPage {
   documentId: string;
   entries: AccessLogEntry[];
-  nextCursor: string | null;
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
 }
 
 export interface PerVersionStat {
@@ -124,6 +130,7 @@ export interface AccessLogStats {
   totalViews: number;
   totalPreviews: number;
   totalDownloads: number;
+  totalDenied: number;
   uniqueViewers: number;
   perVersion: PerVersionStat[];
   perUser: PerUserStat[];

@@ -41,11 +41,6 @@ export class DocumentApiService {
     return this.http.post<VersionMeta>(`${this.base}/${documentId}/versions`, form);
   }
 
-  /**
-   * @param documentId документ
-   * @param versionNumber версия
-   * @param mode preview | download (влияет на аудит и Content-Disposition)
-   */
   download(
     documentId: string,
     versionNumber: number,
@@ -65,8 +60,8 @@ export class DocumentApiService {
   }
 
   /**
-   * @param documentId     документ
-   * @param filters        action / accountId / versionId / withoutVersion / before / limit
+   * @param documentId документ
+   * @param filters    action / accountId / versionId / withoutVersion / deniedOnly / page / size
    */
   audit(
     documentId: string,
@@ -75,19 +70,21 @@ export class DocumentApiService {
       accountId?: string | null;
       versionId?: string | null;
       withoutVersion?: boolean;
-      before?: string | null;
-      limit?: number;
+      deniedOnly?: boolean;
+      page?: number;
+      size?: number;
     } = {},
   ): Observable<AccessLogPage> {
-    let params = new HttpParams().set('limit', filters.limit ?? 50);
+    let params = new HttpParams().set('page', filters.page ?? 0).set('size', filters.size ?? 50);
+
     if (filters.action) params = params.set('action', filters.action);
     if (filters.accountId) params = params.set('accountId', filters.accountId);
+    if (filters.deniedOnly) params = params.set('deniedOnly', 'true');
     if (filters.withoutVersion) {
       params = params.set('withoutVersion', 'true');
     } else if (filters.versionId) {
       params = params.set('versionId', filters.versionId);
     }
-    if (filters.before) params = params.set('before', filters.before);
     return this.http.get<AccessLogPage>(`${this.base}/${documentId}/audit`, { params });
   }
 

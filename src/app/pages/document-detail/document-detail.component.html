@@ -175,6 +175,10 @@
       <div class="stat-value">{{ s.uniqueViewers }}</div>
       <div class="stat-label">Уникальных</div>
     </div>
+    <div class="stat stat-danger">
+      <div class="stat-value">{{ s.totalDenied }}</div>
+      <div class="stat-label">Отказов</div>
+    </div>
   </div>
 
   @if (s.perVersion.length > 0) {
@@ -235,7 +239,14 @@
       </select>
     </label>
 
-    @if (auditActionFilter || auditVersionFilter) {
+    <label class="toggle">
+      <input type="checkbox"
+             [(ngModel)]="auditDeniedOnly"
+             (ngModelChange)="applyAuditFilters()" />
+      <span>Только отказы</span>
+    </label>
+
+    @if (auditActionFilter || auditVersionFilter || auditDeniedOnly) {
     <button class="btn btn-ghost" (click)="clearAuditFilters()">Сбросить</button>
     }
   </div>
@@ -259,20 +270,33 @@
       </thead>
       <tbody>
       @for (e of auditEntries(); track e.id) {
-      <tr>
+      <tr [class.denied]="isDenied(e)">
         <td class="col-date">{{ e.at | date:'medium' }}</td>
         <td>
+          @if (e.accountName) {
           <div class="user-name">{{ e.accountName }}</div>
+          @if (e.accountEmail) {
           <div class="user-email">{{ e.accountEmail }}</div>
+          }
+          } @else {
+          <div class="user-anon">аноним</div>
+          }
         </td>
         <td>
                 <span class="action-badge" [attr.data-action]="e.action">
                   {{ actionLabel(e.action) }}
                 </span>
+          @if (isDenied(e) && e.deniedReason) {
+          <div class="denied-reason">
+            {{ deniedReasonLabel(e.deniedReason) }}
+          </div>
+          }
         </td>
         <td>
           @if (e.versionNumber != null) {
           <strong>v{{ e.versionNumber }}</strong>
+          } @else if (e.attemptedVersionNumber != null) {
+          <span class="muted-dash">v{{ e.attemptedVersionNumber }}</span>
           } @else {
           <span class="muted-dash">—</span>
           }
@@ -288,9 +312,47 @@
     </table>
   </div>
 
-  @if (auditNextCursor()) {
-  <button class="ghost" (click)="loadMoreAudit()">Загрузить ещё</button>
-  }
+  <!-- ============================================================
+       Пагинация
+       ============================================================ -->
+  <div class="pagination">
+    <div class="pagination-info">
+      Страница <strong>{{ auditPage() }}</strong> из <strong>{{ auditTotalPages() || 1 }}</strong>
+      · всего <strong>{{ auditTotalElements() }}</strong> записей
+    </div>
+
+    <div class="pagination-controls">
+      <button class="page-btn" (click)="firstPage()"
+              [disabled]="auditPage() === 1" aria-label="Первая">«</button>
+      <button class="page-btn" (click)="prevPage()"
+              [disabled]="auditPage() === 1" aria-label="Назад">‹</button>
+
+      @for (p of visiblePages(); track p) {
+      @if (p === '...') {
+      <span class="page-gap">…</span>
+      } @else {
+      <button class="page-btn"
+              [class.active]="p === auditPage()"
+              (click)="goToPage(p)">{{ p }}</button>
+      }
+      }
+
+      <button class="page-btn" (click)="nextPage()"
+              [disabled]="auditPage() === auditTotalPages()" aria-label="Вперёд">›</button>
+      <button class="page-btn" (click)="lastPage()"
+              [disabled]="auditPage() === auditTotalPages()" aria-label="Последняя">»</button>
+    </div>
+
+    <label class="page-size">
+      <span>На странице:</span>
+      <select [ngModel]="auditPageSize()"
+              (ngModelChange)="changePageSize($event)">
+        @for (s of pageSizes; track s) {
+        <option [ngValue]="s">{{ s }}</option>
+        }
+      </select>
+    </label>
+  </div>
   }
 </div>
 }
